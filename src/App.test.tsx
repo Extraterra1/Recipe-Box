@@ -36,4 +36,40 @@ describe('Recipe Box app shell', () => {
     expect(ingredient).toBeChecked();
     expect(screen.getByText(/1 of 45 applied/i)).toBeInTheDocument();
   });
+
+  it('keeps unavailable cloud actions disabled in local mode', async () => {
+    render(<App />);
+
+    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText(/Open household settings/i));
+
+    expect(screen.getByRole('button', { name: /Send magic link/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Join household/i })).toBeDisabled();
+    expect(screen.getByLabelText(/Email/i)).toBeDisabled();
+    expect(screen.getByLabelText(/Join code/i)).toBeDisabled();
+  });
+
+  it('asks for confirmation before deleting a recipe', async () => {
+    render(<App />);
+
+    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
+
+    expect(screen.getByRole('button', { name: /Confirm delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /2 Dollar Burrito but Cheaper/i })).toBeInTheDocument();
+  });
+
+  it('explains when a recipe has no directions yet', async () => {
+    render(<App />);
+
+    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
+
+    const list = screen.getByRole('list', { name: /Recipes/i });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Birthday Cake/i }));
+
+    expect(screen.getByText(/No directions saved yet/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add directions/i })).toBeInTheDocument();
+  });
 });

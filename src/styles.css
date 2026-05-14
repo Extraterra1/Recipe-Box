@@ -137,8 +137,8 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(2rem, 5vw, 4.2rem);
-  line-height: 0.98;
+  font-size: 3.2rem;
+  line-height: 1;
   letter-spacing: 0;
   text-wrap: balance;
 }
@@ -267,7 +267,8 @@ a:focus-visible {
 .chip,
 .tag,
 .button,
-.icon-button {
+.icon-button,
+.text-button {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -283,6 +284,17 @@ a:focus-visible {
     transform 180ms var(--ease-out),
     background-color 180ms var(--ease-out),
     border-color 180ms var(--ease-out);
+}
+
+.chip:disabled,
+.tag:disabled,
+.button:disabled,
+.icon-button:disabled,
+.text-button:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .chip,
@@ -428,6 +440,26 @@ a:focus-visible {
   border-color: oklch(80% 0.08 28);
   background: oklch(95% 0.04 28);
   color: var(--color-tomato);
+}
+
+.button.danger.active-danger {
+  border-color: var(--color-tomato);
+  background: oklch(91% 0.07 28);
+  color: oklch(42% 0.16 28);
+}
+
+.inline-warning {
+  display: inline-flex;
+  max-width: 72ch;
+  margin: calc(-1 * var(--space-3)) 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid oklch(80% 0.08 28);
+  border-radius: var(--radius-sm);
+  background: oklch(96% 0.035 28);
+  color: oklch(40% 0.1 28);
+  font-size: 0.94rem;
+  font-weight: 760;
+  line-height: 1.4;
 }
 
 .source-link {
@@ -592,6 +624,16 @@ a:focus-visible {
 
 .direction-panel ol {
   max-width: 72ch;
+}
+
+.empty-section {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  max-width: 48ch;
+  margin-top: var(--space-4);
+  color: var(--color-muted);
+  line-height: 1.45;
 }
 
 .direction-panel li::marker {
@@ -785,6 +827,17 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .recipe-rail {
+    order: 2;
+  }
+
+  .recipe-detail,
+  .editor-surface,
+  .settings-surface,
+  .empty-detail {
+    order: 1;
+  }
+
   .detail-head {
     display: grid;
   }
@@ -802,6 +855,7 @@ a:focus-visible {
 
   h2 {
     font-size: 2.25rem;
+    line-height: 1.04;
   }
 }
 

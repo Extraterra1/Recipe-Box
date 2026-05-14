@@ -71,6 +71,7 @@ export default function App() {
   const [inviteCode, setInviteCode] = useState('');
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
   const [ingredientChecks, setIngredientChecks] = useState<IngredientChecks>(() => loadIngredientChecks());
+  const [pendingDeleteId, setPendingDeleteId] = useState('');
 
   useEffect(() => {
     void bootstrap();
@@ -232,6 +233,17 @@ export default function App() {
     void persistRecipe({ ...recipe, favorite: !recipe.favorite });
   }
 
+  function requestDelete(recipe: Recipe) {
+    if (pendingDeleteId !== recipe.id) {
+      setPendingDeleteId(recipe.id);
+      setStatusMessage(`Press confirm to delete ${recipe.title}.`);
+      return;
+    }
+
+    setPendingDeleteId('');
+    void deleteRecipe(recipe);
+  }
+
   function toggleIngredient(recipeId: string, ingredientIndex: number) {
     setIngredientChecks((current) => {
       const checked = new Set(current[recipeId] ?? []);
@@ -350,6 +362,7 @@ export default function App() {
             onSelect={(recipe) => {
               setSelectedId(recipe.id);
               setEditingRecipe(null);
+              setPendingDeleteId('');
               setActivePanel('recipes');
             }}
             onFavorite={toggleFavorite}
@@ -373,14 +386,19 @@ export default function App() {
           <RecipeEditor
             recipe={editingRecipe}
             onCancel={() => setEditingRecipe(null)}
-            onSave={(recipe) => void persistRecipe(recipe)}
+            onSave={(recipe) => {
+              setPendingDeleteId('');
+              void persistRecipe(recipe);
+            }}
           />
         ) : selectedRecipe ? (
           <RecipeDetail
             recipe={selectedRecipe}
             checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
             onEdit={() => setEditingRecipe(selectedRecipe)}
-            onDelete={() => void deleteRecipe(selectedRecipe)}
+            deleteNeedsConfirmation={pendingDeleteId === selectedRecipe.id}
+            onDelete={() => requestDelete(selectedRecipe)}
+            onCancelDelete={() => setPendingDeleteId('')}
             onFavorite={() => toggleFavorite(selectedRecipe)}
             onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
             onResetIngredients={() => resetIngredients(selectedRecipe.id)}
@@ -469,17 +487,21 @@ function RecipeDetail({
   checkedIngredientIndexes,
   onEdit,
   onDelete,
+  onCancelDelete,
   onFavorite,
   onToggleIngredient,
-  onResetIngredients
+  onResetIngredients,
+  deleteNeedsConfirmation
 }: {
   recipe: Recipe;
   checkedIngredientIndexes: number[];
   onEdit: () => void;
   onDelete: () => void;
+  onCancelDelete: () => void;
   onFavorite: () => void;
   onToggleIngredient: (ingredientIndex: number) => void;
   onResetIngredients: () => void;
+  deleteNeedsConfirmation: boolean;
 }) {
   const checkedIngredients = new Set(checkedIngredientIndexes);
   const appliedCount = recipe.ingredients.filter((_, index) => checkedIngredients.has(index)).length;
@@ -499,11 +521,27 @@ function RecipeDetail({
           <button type="button" className="button subtle" onClick={onEdit}>
             <Edit3 size={17} /> Edit
           </button>
-          <button type="button" className="button danger" onClick={onDelete}>
-            <Trash2 size={17} /> Delete
+          {deleteNeedsConfirmation ? (
+            <button type="button" className="button subtle" onClick={onCancelDelete}>
+              Keep recipe
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={deleteNeedsConfirmation ? 'button danger active-danger' : 'button danger'}
+            onClick={onDelete}
+            aria-describedby={deleteNeedsConfirmation ? 'delete-confirmation-note' : undefined}
+          >
+            <Trash2 size={17} /> {deleteNeedsConfirmation ? 'Confirm delete' : 'Delete'}
           </button>
         </div>
       </div>
+
+      {deleteNeedsConfirmation ? (
+        <p id="delete-confirmation-note" className="inline-warning" role="status">
+          This removes the recipe from this household. Undo is available right after deletion.
+        </p>
+      ) : null}
 
       {recipe.sourceUrl ? (
         <a className="source-link" href={recipe.sourceUrl} target="_blank" rel="noreferrer">
@@ -546,11 +584,20 @@ function RecipeDetail({
 
         <section className="direction-panel" aria-labelledby="directions-heading">
           <h3 id="directions-heading">Directions</h3>
-          <ol>
-            {recipe.directions.map((direction, index) => (
-              <li key={`${direction}-${index}`}>{direction}</li>
-            ))}
-          </ol>
+          {recipe.directions.length ? (
+            <ol>
+              {recipe.directions.map((direction, index) => (
+                <li key={`${direction}-${index}`}>{direction}</li>
+              ))}
+            </ol>
+          ) : (
+            <div className="empty-section">
+              <p>No directions saved yet.</p>
+              <button type="button" className="button subtle" onClick={onEdit}>
+                <Edit3 size={16} /> Add directions
+              </button>
+            </div>
+          )}
         </section>
       </div>
 
@@ -732,6 +779,7 @@ function SettingsPanel({
   onSignOut: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
+  const cloudReady = hasSupabaseConfig;
 
   return (
     <section className="settings-surface" aria-labelledby="settings-heading">
@@ -749,7 +797,7 @@ function SettingsPanel({
           {hasSupabaseConfig ? (
             <p className="settings-copy">Connected with browser-safe credentials.</p>
           ) : (
-            <p className="settings-copy">Add Supabase values in `.env` to turn on cloud auth and sync.</p>
+            <p className="settings-copy">Add Supabase values in `.env.local`, then restart the app to turn on cloud sync.</p>
           )}
           <form onSubmit={onMagicLink} className="compact-form">
             <label>
@@ -759,13 +807,14 @@ function SettingsPanel({
                 value={authEmail}
                 onChange={(event) => onAuthEmailChange(event.target.value)}
                 placeholder="cook@example.com"
+                disabled={!cloudReady}
               />
             </label>
-            <button type="submit" className="button primary">
+            <button type="submit" className="button primary" disabled={!cloudReady}>
               <Send size={16} /> Send magic link
             </button>
           </form>
-          <button type="button" className="button subtle" onClick={onSignOut}>
+          <button type="button" className="button subtle" onClick={onSignOut} disabled={!cloudReady}>
             <LogOut size={16} /> Sign out
           </button>
         </section>
@@ -776,9 +825,9 @@ function SettingsPanel({
           <form onSubmit={onInvite} className="compact-form">
             <label>
               Join code
-              <input value={inviteCode} onChange={(event) => onInviteCodeChange(event.target.value)} />
+              <input value={inviteCode} onChange={(event) => onInviteCodeChange(event.target.value)} disabled={!cloudReady} />
             </label>
-            <button type="submit" className="button subtle">
+            <button type="submit" className="button subtle" disabled={!cloudReady}>
               Join household
             </button>
           </form>
