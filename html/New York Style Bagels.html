@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style type="text/css">
+            /* Shared styles */
+            body {
+                font-family: Helvetica, sans-serif;
+                font-size: 16px;
+                color: #34302e;
+                margin: 0.25in;
+            }
+            @page {
+                size: letter portrait;
+                margin: 0.25in;
+            }
+            .name {
+                font-size: 18px;
+                font-family: Helvetica, sans-serif;
+                font-weight: normal;
+                margin: 0 0 10px 0;
+            }
+            .categories {
+                color: #605D5D;
+                font-size: 14px;
+                font-family: Helvetica, sans-serif;
+                font-style: italic;
+            }
+            .rating {
+                color: #d10505;
+                font-size: 14px;
+            }
+            .metadata {
+                font-size: 14px;
+            }
+            .infobox p {
+                margin: 0;
+                line-height: 150%;
+            }
+            .subhead {
+                color: #d10505;
+                font-weight: bold;
+                font-size: 14px;
+                text-transform: uppercase;
+                margin: 10px 0;
+            }
+            
+            .ingredients p {
+                margin: 4px 0;
+            }
+            /* To prevent nutrition/directions from getting too close
+               to ingredients */
+            .ingredients {
+                padding-bottom: 10px;
+            }
+            .clear {
+                clear:both;
+            }
+            a {
+                color: #4990E2;
+                text-decoration: none;
+            }
+            /* Full page specific styles */
+            .text {
+                line-height: 130%;
+            }
+            .photobox {
+                float: left;
+                margin-right: 14px;
+                            }
+            .photo {
+                max-width: 140px;
+                max-height: 140px;
+                width: auto;
+                height: auto;
+            }
+            .inline-image {
+                max-width: 25%;
+                max-height: 25%;
+                width: auto;
+                height: auto;
+            }
+            .photoswipe {
+                border: 1px #dddddd solid;
+                cursor: pointer;
+            }
+            .pswp__caption__center {
+                text-align: center !important;
+            }
+            .recipe {
+                page-break-after: always;
+                            }
+            .recipe:first-child {
+                border-top: 0 none;
+                margin-top: 0;
+                padding-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Recipe -->
+<div class="recipe" itemscope itemtype="http://schema.org/Recipe" >
+    
+    <div class="infobox">
+
+        <!-- Image -->
+        <div class="photobox">
+            <a href="https://i.ytimg.com/vi/W8j-ZUp7KD0/maxresdefault.jpg">
+                <img src="Images/DA07B134-8678-4CEB-BDD8-AA481C7D13FB/02080CCD-D9C1-4138-BCEC-CC73A5533AE4.jpg" itemprop="image" class="photo photoswipe"/>
+            </a>
+                    </div>
+
+        <!-- Name -->
+        <h1 itemprop="name" class="name">New York Style Bagels</h1>
+        
+        <!-- Info -->
+        
+        <!-- Rating, categories -->
+        <p itemprop="aggregateRating" class="rating" value="0"></p>
+        
+        <p class="metadata">
+        
+            <!-- Cook time, prep time, servings, difficulty -->
+
+            <!-- Source -->
+                <b>Source: </b>
+                    <a itemprop="url" href="https://www.joshuaweissman.com/post/new-york-style-bagels">
+                        <span itemprop="author">Joshuaweissman.com</span>
+                    </a>
+                            
+        </p>
+        
+        <div class="clear"></div>
+
+    </div>
+    
+    <div class="left-column">
+
+        <!-- Ingredients -->
+        <div class="ingredientsbox">
+            <h3 class="subhead">Ingredients</h3>
+            <div class="ingredients text">
+                <p class="line" itemprop="recipeIngredient"><strong>Bagels Ingredients:</strong></p><p class="line" itemprop="recipeIngredient"><strong>297</strong>g Water</p><p class="line" itemprop="recipeIngredient"><strong>10</strong> grams yeast</p><p class="line" itemprop="recipeIngredient"><strong>23</strong> grams sugar</p><p class="line" itemprop="recipeIngredient"><strong>500</strong> grams bread flour</p><p class="line" itemprop="recipeIngredient"><strong>6</strong> grams salt</p><p class="line" itemprop="recipeIngredient"><strong>2</strong> Tbsp garlic flakes</p><p class="line" itemprop="recipeIngredient"><strong>2 ½</strong> Tbsp onion flakes</p><p class="line" itemprop="recipeIngredient"><strong>1 ½</strong> Tbsp white sesame seeds</p><p class="line" itemprop="recipeIngredient"><strong>1</strong> Tbsp poppy seeds</p><p class="line" itemprop="recipeIngredient"><strong>1</strong> Tbsp black sesame seeds</p><p class="line" itemprop="recipeIngredient"><strong>½</strong> Tbsp flaky sea salt</p><p class="line" itemprop="recipeIngredient"><strong>Toppings:</strong></p><p class="line" itemprop="recipeIngredient">Cream cheese</p><p class="line" itemprop="recipeIngredient">Tomato slices</p><p class="line" itemprop="recipeIngredient">Capers</p><p class="line" itemprop="recipeIngredient">Sliced red onion</p><p class="line" itemprop="recipeIngredient">Dill</p>
+            </div>
+        </div>
+        
+        <!-- Nutrition (in two-column mode it goes below the ingredients) -->
+
+    </div>
+    
+    <div class="right-column">
+    
+    <!-- Description -->
+
+    <!-- Directions -->
+    <div class="directionsbox">
+        <h3 class="subhead">Directions</h3>
+        <div itemprop="recipeInstructions" class="directions text">
+            <p class="line"><strong>Bagel Method:</strong></p><p class="line">Bloom your yeast by combining warm water (90 degrees fahrenheit) with your yeast and sugar. Give a little stir and let rest for 10 minutes.</p><p class="line">In a separate bowl, add bread flour, salt and yeast mixture and mix with your hands until you get a shaggy dough.</p><p class="line">Turn dough out onto a work surface and begin kneading for 10 minutes. Once dough reaches a silky smooth surface; fold sides into itself and place in a well oiled bowl. Cover with a damp towel and let rise for one hour.</p><p class="line">Once the dough has doubled in size, punch the dough in the center to deflate.</p><p class="line">Turn dough out onto a lightly floured work surface and divide into 8 equal parts by cutting it in half and then cutting each of those halves into 4 equal pieces. Shape each piece into a ball by pinching and forming a seam.</p><p class="line">Place the dough ball seam side down and swirl it around on a non floured surface while maintaining constant contact. Place on a baking sheet and cover with a damp towel for 10 minutes.</p><p class="line">To make the Everything Flavored seasoning, combine onion flakes, garlic flakes, sesame seeds, poppy seeds and sea salt in a bowl until thoroughly combined.</p><p class="line">Take a dough ball and press a floured thumb and index finger through the center to make a hole. Twirl the dough around two fingers lightly, pulling and stretching it apart. Repeat the process until you get the right width. The hole should be an inch in diameter.</p><p class="line">Being a pot of water to a boil.</p><p class="line">Drop bagels in one at a time and leave room in the pot for expansion. Gently boil the bagels for 1-2 minutes per side.</p><p class="line">Drain bagels and place them on a lightly oiled baking sheet, brush with egg wash and sprinkle on your everything bagel seasoning.</p><p class="line">Place in the oven and let back at 425 degrees fahrenheit for 20 minutes.</p><p class="line">Remove from the oven, let cool and top with your favorite ingredients.</p>
+        </div>
+    </div>
+
+    <!-- Notes -->
+
+
+    <!-- Nutrition (in regular mode it goes below the notes) -->
+        <!-- Used in two different places depending on the recipe layout -->
+
+    
+    </div>
+    
+    <div class="clear"></div>
+
+</div>
+
+
+
+    </body>
+</html>

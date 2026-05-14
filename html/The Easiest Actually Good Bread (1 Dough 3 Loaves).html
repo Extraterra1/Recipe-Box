@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style type="text/css">
+            /* Shared styles */
+            body {
+                font-family: Helvetica, sans-serif;
+                font-size: 16px;
+                color: #34302e;
+                margin: 0.25in;
+            }
+            @page {
+                size: letter portrait;
+                margin: 0.25in;
+            }
+            .name {
+                font-size: 18px;
+                font-family: Helvetica, sans-serif;
+                font-weight: normal;
+                margin: 0 0 10px 0;
+            }
+            .categories {
+                color: #605D5D;
+                font-size: 14px;
+                font-family: Helvetica, sans-serif;
+                font-style: italic;
+            }
+            .rating {
+                color: #d10505;
+                font-size: 14px;
+            }
+            .metadata {
+                font-size: 14px;
+            }
+            .infobox p {
+                margin: 0;
+                line-height: 150%;
+            }
+            .subhead {
+                color: #d10505;
+                font-weight: bold;
+                font-size: 14px;
+                text-transform: uppercase;
+                margin: 10px 0;
+            }
+            
+            .ingredients p {
+                margin: 4px 0;
+            }
+            /* To prevent nutrition/directions from getting too close
+               to ingredients */
+            .ingredients {
+                padding-bottom: 10px;
+            }
+            .clear {
+                clear:both;
+            }
+            a {
+                color: #4990E2;
+                text-decoration: none;
+            }
+            /* Full page specific styles */
+            .text {
+                line-height: 130%;
+            }
+            .photobox {
+                float: left;
+                margin-right: 14px;
+                            }
+            .photo {
+                max-width: 140px;
+                max-height: 140px;
+                width: auto;
+                height: auto;
+            }
+            .inline-image {
+                max-width: 25%;
+                max-height: 25%;
+                width: auto;
+                height: auto;
+            }
+            .photoswipe {
+                border: 1px #dddddd solid;
+                cursor: pointer;
+            }
+            .pswp__caption__center {
+                text-align: center !important;
+            }
+            .recipe {
+                page-break-after: always;
+                            }
+            .recipe:first-child {
+                border-top: 0 none;
+                margin-top: 0;
+                padding-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Recipe -->
+<div class="recipe" itemscope itemtype="http://schema.org/Recipe" >
+    
+    <div class="infobox">
+
+        <!-- Image -->
+        <div class="photobox">
+            <a href="http://static1.squarespace.com/static/62227f3fe1583d580047c391/623dc6e8e9400537fbbcaa9e/64ac6347867a3071791ba732/1690469737312/DSC07583-2.jpg?format=1500w">
+                <img src="Images/700B79C6-A3B2-495D-88C0-47F56A67B882/070C54B0-2B0B-4EB7-97D1-4E881A7874C1.jpg" itemprop="image" class="photo photoswipe"/>
+            </a>
+                    </div>
+
+        <!-- Name -->
+        <h1 itemprop="name" class="name">The Easiest Actually Good Bread (1 Dough 3 Loaves)</h1>
+        
+        <!-- Info -->
+        
+        <!-- Rating, categories -->
+        <p itemprop="aggregateRating" class="rating" value="0"></p>
+        
+        <p class="metadata">
+        
+            <!-- Cook time, prep time, servings, difficulty -->
+
+            <!-- Source -->
+                <b>Source: </b>
+                    <a itemprop="url" href="https://www.brianlagerstrom.com/recipes/1-dough-3-loaves-2">
+                        <span itemprop="author">Brianlagerstrom.com</span>
+                    </a>
+                            
+        </p>
+        
+        <div class="clear"></div>
+
+    </div>
+    
+    <div class="left-column">
+
+        <!-- Ingredients -->
+        <div class="ingredientsbox">
+            <h3 class="subhead">Ingredients</h3>
+            <div class="ingredients text">
+                <p class="line" itemprop="recipeIngredient"><strong>Poolish Ingredients:</strong></p><p class="line" itemprop="recipeIngredient"><strong>150</strong> grams (2/3c) of room temperature water</p><p class="line" itemprop="recipeIngredient">Tiny pinch of yeast</p><p class="line" itemprop="recipeIngredient"><strong>150</strong> (1 1/4c) grams of bread flour</p><p class="line" itemprop="recipeIngredient"><strong>Dough Ingredients:</strong></p><p class="line" itemprop="recipeIngredient"><strong>250</strong> (1c) grams of warm water (approx 86F/30C)</p><p class="line" itemprop="recipeIngredient"><strong>2</strong> grams (2/3 tsp) of instant yeast</p><p class="line" itemprop="recipeIngredient"><strong>300</strong> grams of ripe poolish (see instructions below)</p><p class="line" itemprop="recipeIngredient"><strong>12</strong> grams (2 1/2tsp) of salt</p><p class="line" itemprop="recipeIngredient"><strong>400</strong> grams (3 1/3c) of bread flour</p><p class="line" itemprop="recipeIngredient"><strong>50</strong> grams (1/2c) of whole wheat flour</p>
+            </div>
+        </div>
+        
+        <!-- Nutrition (in two-column mode it goes below the ingredients) -->
+
+    </div>
+    
+    <div class="right-column">
+    
+    <!-- Description -->
+
+    <!-- Directions -->
+    <div class="directionsbox">
+        <h3 class="subhead">Directions</h3>
+        <div itemprop="recipeInstructions" class="directions text">
+            <p class="line"><strong>Instructions for Poolish:</strong></p><p class="line">In a small bowl, combine the room temperature water, pinch of yeast, and bread flour.</p><p class="line">Stir to combine and let it ferment at room temperature for at least 4 hours, but preferably 24 hours.</p><p class="line"><strong>Instructions for Dough:</strong></p><p class="line">In a medium bowl, mix together the warm water, instant yeast, and ripe poolish.</p><p class="line">Add the salt, bread flour, and whole wheat flour to the bowl.</p><p class="line">Stir with a sturdy spoon until the ingredients are reasonably combined.</p><p class="line">Then use a wet hand to squeeze and massage the dough until there are no longer any dry spots and everything is evenly combined.</p><p class="line">Cover the bowl with a lid and let the dough ferment for 30 minutes.</p><p class="line">Perform a strength building fold by pulling out a handful of the dough on one side and folding it over to the other side of the dough. Rotate the bowl slightly and repeat about 7 more times, rotating the bowl after each fold. See video @3:15.</p><p class="line">After the folds, grab the ball of dough, around its side/bottom, picking up the ball, rounding and rotating it, then setting it back down to tension across the top and round it onto a ball. Do this several times. See video @4:15.</p><p class="line">Cover and allow to ferment at room temperature again for another 30 minutes. After 30 minutes repeat steps 6 and 7.</p><p class="line">Cover and allow the dough to ferment at room temperature for another 60 minutes. As this point you’ve fermented for 2 hours total. When you check back this time, the dough should have doubled in size.</p><p class="line">If you’d like to use a stand mixer instead of stirring by hand, use a mixer with dough hook attachment on medium speed to replace steps 3 and 4 and mix for 4-5 minutes until dough has come together and is clearing the bowl.</p><p class="line">Loaf 3: The Big Dog Boule (Best)</p><p class="line">Flour your work surface and gently flip the dough out onto it.</p><p class="line">Pop any large bubbles and shape the dough.</p><p class="line">To shape the dough, grab a corner/side piece of the dough and pull it across to the other side of the dough, about 60% of the way across the other side of the dough. Grab another side/corner of the dough next to the first, and fold it across, about 60% of the way to the other side. Repeat all the way around the dough. You’ll do this between 7-9 times in total, popping any big bubbles that form along the way.</p><p class="line">Flip the dough ball over so that the seam side you is against the work surface. With your hands on either side of the dough, roll the dough on its seam side to seal it and create tension across the top of the dough. See video @11:55.</p><p class="line">Grab a medium sized bowl that’s just bigger than the dough you just made (i use the same</p><p class="line">bowl that i mixed the dough in). Line the bowl with a thin kitchen towel and dust the towel with a mix of wheat and all purpose flour. Transfer the dough ball to the floured towel-bowl, seam side up, tucking the seam once again to better seal.</p><p class="line">Fold the towel over the dough and let it proof at room temperature for 45-80 minutes (depending on the temperature of your house) until it has doubled in size. When you poke the dough, it should indent then slowly spring back.</p><p class="line">Preheat the oven to 480°F (250°C) with a dutch oven inside for 30 minutes</p><p class="line">Place a generous dusting of semolina flour or fine cornmeal in the dutch oven to prevent sticking.</p><p class="line">Carefully flip the shaped loaf into the dutch oven (seam side will now be DOWN) and score the top with a few cuts or slices.</p><p class="line">Cover the dutch oven with the lid and bake for 18 minutes.</p><p class="line">Remove the lid and continue baking for another 20-25 minutes, reducing the oven temp to 465F/240C.</p><p class="line">Once baked, transfer the loaf to a wire rack to cool.</p>
+        </div>
+    </div>
+
+    <!-- Notes -->
+
+
+    <!-- Nutrition (in regular mode it goes below the notes) -->
+        <!-- Used in two different places depending on the recipe layout -->
+
+    
+    </div>
+    
+    <div class="clear"></div>
+
+</div>
+
+
+
+    </body>
+</html>

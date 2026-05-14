@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Recipe Box">
+  <rect width="180" height="180" rx="42" fill="#f7eee7"/>
+  <path d="M45 62c0-12 10-22 22-22h48c12 0 22 10 22 22v76H45V62Z" fill="#d7644d"/>
+  <path d="M66 40h49v28H66z" fill="#f4d46b"/>
+  <path d="M67 91h49M67 111h34" stroke="#fff8ed" stroke-width="10" stroke-linecap="round"/>
+</svg>

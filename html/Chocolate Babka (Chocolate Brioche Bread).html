@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <style type="text/css">
+            /* Shared styles */
+            body {
+                font-family: Helvetica, sans-serif;
+                font-size: 16px;
+                color: #34302e;
+                margin: 0.25in;
+            }
+            @page {
+                size: letter portrait;
+                margin: 0.25in;
+            }
+            .name {
+                font-size: 18px;
+                font-family: Helvetica, sans-serif;
+                font-weight: normal;
+                margin: 0 0 10px 0;
+            }
+            .categories {
+                color: #605D5D;
+                font-size: 14px;
+                font-family: Helvetica, sans-serif;
+                font-style: italic;
+            }
+            .rating {
+                color: #d10505;
+                font-size: 14px;
+            }
+            .metadata {
+                font-size: 14px;
+            }
+            .infobox p {
+                margin: 0;
+                line-height: 150%;
+            }
+            .subhead {
+                color: #d10505;
+                font-weight: bold;
+                font-size: 14px;
+                text-transform: uppercase;
+                margin: 10px 0;
+            }
+            
+            .ingredients p {
+                margin: 4px 0;
+            }
+            /* To prevent nutrition/directions from getting too close
+               to ingredients */
+            .ingredients {
+                padding-bottom: 10px;
+            }
+            .clear {
+                clear:both;
+            }
+            a {
+                color: #4990E2;
+                text-decoration: none;
+            }
+            /* Full page specific styles */
+            .text {
+                line-height: 130%;
+            }
+            .photobox {
+                float: left;
+                margin-right: 14px;
+                            }
+            .photo {
+                max-width: 140px;
+                max-height: 140px;
+                width: auto;
+                height: auto;
+            }
+            .inline-image {
+                max-width: 25%;
+                max-height: 25%;
+                width: auto;
+                height: auto;
+            }
+            .photoswipe {
+                border: 1px #dddddd solid;
+                cursor: pointer;
+            }
+            .pswp__caption__center {
+                text-align: center !important;
+            }
+            .recipe {
+                page-break-after: always;
+                            }
+            .recipe:first-child {
+                border-top: 0 none;
+                margin-top: 0;
+                padding-top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Recipe -->
+<div class="recipe" itemscope itemtype="http://schema.org/Recipe" >
+    
+    <div class="infobox">
+
+        <!-- Image -->
+        <div class="photobox">
+            <a href="https://i.ytimg.com/vi/q8VFsAGDleo/maxresdefault.jpg">
+                <img src="Images/C1D1BC20-C09A-424B-A5D0-1D4591A1869F/DCFB3920-8F7A-47F9-8D8D-6F7872413EF2.jpg" itemprop="image" class="photo photoswipe"/>
+            </a>
+                    </div>
+
+        <!-- Name -->
+        <h1 itemprop="name" class="name">Chocolate Babka (Chocolate Brioche Bread)</h1>
+        
+        <!-- Info -->
+        
+        <!-- Rating, categories -->
+        <p itemprop="aggregateRating" class="rating" value="0"></p>
+        
+        <p class="metadata">
+        
+            <!-- Cook time, prep time, servings, difficulty -->
+
+            <!-- Source -->
+                <b>Source: </b>
+                    <a itemprop="url" href="https://www.joshuaweissman.com/post/chocolate-babka-chocolate-brioche-bread">
+                        <span itemprop="author">Joshuaweissman.com</span>
+                    </a>
+                            
+        </p>
+        
+        <div class="clear"></div>
+
+    </div>
+    
+    <div class="left-column">
+
+        <!-- Ingredients -->
+        <div class="ingredientsbox">
+            <h3 class="subhead">Ingredients</h3>
+            <div class="ingredients text">
+                <p class="line" itemprop="recipeIngredient"><strong>Dough Ingredients:</strong></p><p class="line" itemprop="recipeIngredient"><strong>3 1/3</strong> cup (530g) all purpose flour</p><p class="line" itemprop="recipeIngredient"><strong>1/2</strong> cup (100g) granulated sugar</p><p class="line" itemprop="recipeIngredient"><strong>3</strong> tsp (10g) instant yeast</p><p class="line" itemprop="recipeIngredient"><strong>3/4</strong> cup (175g) lukewarm water (90 degrees F)</p><p class="line" itemprop="recipeIngredient"><strong>3</strong> large eggs</p><p class="line" itemprop="recipeIngredient"><strong>10</strong> Tbsp (150g) unsalted butter, room temp</p><p class="line" itemprop="recipeIngredient"><strong>3/4</strong> tsp (3g) fine sea salt</p><p class="line" itemprop="recipeIngredient">Neutral tasting oil for greasing</p><br/><br/><p class="line" itemprop="recipeIngredient"><strong>Chocolate Paste Ingredients:</strong></p><p class="line" itemprop="recipeIngredient"><strong>6.5</strong> oz (180g) dark chocolate (70 percent or higher)</p><p class="line" itemprop="recipeIngredient"><strong>1/2</strong> cup (120g) unsalted butter</p><p class="line" itemprop="recipeIngredient"><strong>3/4</strong> cup (105g) powdered sugar</p><p class="line" itemprop="recipeIngredient"><strong>1/2</strong> cup plus 1 tbsp (42g) cocoa powder</p><p class="line" itemprop="recipeIngredient"><em>optional</em> freshly grated nutmeg (1/8 teaspoon)</p><p class="line" itemprop="recipeIngredient">Pinch of salt</p>
+            </div>
+        </div>
+        
+        <!-- Nutrition (in two-column mode it goes below the ingredients) -->
+
+    </div>
+    
+    <div class="right-column">
+    
+    <!-- Description -->
+
+    <!-- Directions -->
+    <div class="directionsbox">
+        <h3 class="subhead">Directions</h3>
+        <div itemprop="recipeInstructions" class="directions text">
+            <p class="line"><strong>Chocolate Paste Method:</strong></p><p class="line">In a pot, melt together unsalted butter and freshly chopped dark chocolate.</p><p class="line">Once they’re fully melted, whisk in cacao powder and powdered sugar until completely smooth.</p><p class="line">Add 3 teaspoons of yeast to ¾ cup of lukewarm water (around 90 degrees Fahrenheit). Give a light stir and let bloom for 8 minutes.</p><p class="line">In the bowl of a stand mixer, add all-purpose flour, sugar, fine sea salt. Give a mix by hand to make sure everything is incorporated.</p><p class="line">With the stand mixer going at medium-low speed, add three whole eggs and the bloomed yeast. Let the mixer run until it begins to form a dough. Make sure to scrape down the sides throughout.</p><p class="line">Once it forms a rough dough, add unsalted butter at room temperature a spoonful at a time until all of it is used. Keep the stand mixer going at medium-low speed.</p><p class="line">Once all of the butter is added and the dough is cohesive, let the mizer run at medium-low speed for 8-10 minutes or until the dough is completely smooth.</p><p class="line">Lightly oil a large bowl and add the dough directly to the bowl. Cover the bowl with plastic wrap and place it in the refrigerator overnight.</p><p class="line">Lightly butter two general sized loaf pans (9x5). Dust with a light coating of flour.</p><p class="line">Roll out cold dough onto a lightly floured work surface.</p><p class="line">Divide dough into two and place one half of the dough in plastic and place back in the fridge to hold while you’re working with the first piece.</p><p class="line">Shape dough into a disk and roll out into a square that’s ½ inch thick.</p><p class="line">Spread half of your chocolate mixture over the entire surface of the dough, leaving around an inch border around the edges.</p><p class="line">Once the chocolate has been spread well, brush the top of your dough with a little bit of water so it adheres when you roll it up.</p><p class="line">Roll dough from the bottom all the way to the top. Take the cylinder and cut it in half lengthwise using a bread knife.</p><p class="line">Take one end of the two rolls you have, pinch them together and fold them over each other mimicking a braid. Once you reach the end, pinch the two pieces together.</p><p class="line">Place dough into one of your prepared loaf pans and cover it with a damp towel and let proof at room temperature for 1 ½ - 2 more hours or until it has doubled in size.</p><p class="line">Place pans in an oven that has been preheated to 375 degrees Fahrenheit for 25-30 minutes or until they’re golden brown on top and a toothpick inserted comes out clean.</p><p class="line">While those are baking, combine water and sugar in a pot and bring it over medium heat until all the sugar has dissolved. Place to the side.</p><p class="line">Remove loaves from the oven and immediately brush them with your sugar syrup.</p>
+        </div>
+    </div>
+
+    <!-- Notes -->
+
+
+    <!-- Nutrition (in regular mode it goes below the notes) -->
+        <!-- Used in two different places depending on the recipe layout -->
+
+    
+    </div>
+    
+    <div class="clear"></div>
+
+</div>
+
+
+
+    </body>
+</html>

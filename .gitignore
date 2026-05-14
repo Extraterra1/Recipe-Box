@@ -1,0 +1,14 @@
+.DS_Store
+node_modules/
+dist/
+dev-dist/
+.vite/
+coverage/
+__pycache__/
+*.py[cod]
+*.tsbuildinfo
+vite.config.js
+
+.env
+.env.local
+.env.*.local
