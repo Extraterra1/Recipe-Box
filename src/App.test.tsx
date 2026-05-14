@@ -21,4 +21,19 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('heading', { name: /NYC Pizza/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Ingredients/i })).toBeInTheDocument();
   });
+
+  it('lets cooks mark ingredients as applied while reading a recipe', async () => {
+    render(<App />);
+
+    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
+
+    const ingredient = screen.getByRole('checkbox', { name: /Tortillas/i });
+    expect(ingredient).not.toBeChecked();
+    expect(screen.getByText(/0 of 45 applied/i)).toBeInTheDocument();
+
+    await userEvent.click(ingredient);
+
+    expect(ingredient).toBeChecked();
+    expect(screen.getByText(/1 of 45 applied/i)).toBeInTheDocument();
+  });
 });

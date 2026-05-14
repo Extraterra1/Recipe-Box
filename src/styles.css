@@ -457,6 +457,31 @@ a:focus-visible {
   background: oklch(96% 0.04 88);
 }
 
+.ingredient-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ingredient-panel-head p {
+  margin-top: var(--space-1);
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.text-button {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  background: oklch(100% 0 0 / 60%);
+  color: var(--color-coral-deep);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
 .ingredient-panel ul,
 .direction-panel ol,
 .detail-notes ul {
@@ -465,6 +490,104 @@ a:focus-visible {
   margin: var(--space-4) 0 0;
   padding-left: 1.2rem;
   line-height: 1.55;
+}
+
+.ingredient-panel .ingredient-checklist {
+  gap: var(--space-2);
+  padding-left: 0;
+  list-style: none;
+}
+
+.ingredient-checklist li {
+  border: 1px solid oklch(88% 0.05 86);
+  border-radius: var(--radius-sm);
+  background: oklch(99% 0.012 78 / 78%);
+  transition:
+    background 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.ingredient-checklist li.applied {
+  border-color: oklch(74% 0.08 160);
+  background: oklch(94% 0.045 160 / 76%);
+}
+
+.ingredient-check {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  min-height: 48px;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.ingredient-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.ingredient-checkmark {
+  position: relative;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 2px solid oklch(70% 0.055 62);
+  border-radius: 7px;
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 2px oklch(100% 0 0 / 60%);
+}
+
+.ingredient-checkmark::after {
+  width: 11px;
+  height: 6px;
+  border-bottom: 3px solid var(--color-mint-deep);
+  border-left: 3px solid var(--color-mint-deep);
+  content: "";
+  opacity: 0;
+  transform: translateY(-1px) rotate(-45deg) scale(0.75);
+  transition:
+    opacity 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+
+.ingredient-check input:checked + .ingredient-checkmark {
+  border-color: var(--color-mint-deep);
+  background: var(--color-mint);
+}
+
+.ingredient-check input:checked + .ingredient-checkmark::after {
+  opacity: 1;
+  transform: translateY(-1px) rotate(-45deg) scale(1);
+}
+
+.ingredient-check input:focus-visible + .ingredient-checkmark {
+  outline: 3px solid oklch(72% 0.12 34 / 48%);
+  outline-offset: 3px;
+}
+
+.ingredient-text {
+  min-width: 0;
+  color: var(--color-ink);
+  font-weight: 760;
+  overflow-wrap: anywhere;
+  transition:
+    color 160ms var(--ease-out),
+    text-decoration-color 160ms var(--ease-out);
+}
+
+.ingredient-checklist li.applied .ingredient-text {
+  color: oklch(42% 0.04 155);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: oklch(56% 0.09 158 / 64%);
 }
 
 .direction-panel ol {

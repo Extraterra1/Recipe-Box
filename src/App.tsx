@@ -36,6 +36,8 @@ import {
 import { hasSupabaseConfig } from './lib/supabaseClient';
 import type { Cookbook, Recipe, SyncState } from './lib/types';
 
+const INGREDIENT_CHECKS_KEY = 'recipe-box-ingredient-checks';
+
 const BLANK_RECIPE: Recipe = {
   id: '',
   title: '',
@@ -52,6 +54,8 @@ const BLANK_RECIPE: Recipe = {
   updatedAt: ''
 };
 
+type IngredientChecks = Record<string, number[]>;
+
 export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -66,10 +70,15 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
+  const [ingredientChecks, setIngredientChecks] = useState<IngredientChecks>(() => loadIngredientChecks());
 
   useEffect(() => {
     void bootstrap();
   }, []);
+
+  useEffect(() => {
+    saveIngredientChecks(ingredientChecks);
+  }, [ingredientChecks]);
 
   const tags = useMemo(() => getAllTags(recipes), [recipes]);
   const filteredRecipes = useMemo(
@@ -223,6 +232,29 @@ export default function App() {
     void persistRecipe({ ...recipe, favorite: !recipe.favorite });
   }
 
+  function toggleIngredient(recipeId: string, ingredientIndex: number) {
+    setIngredientChecks((current) => {
+      const checked = new Set(current[recipeId] ?? []);
+      if (checked.has(ingredientIndex)) {
+        checked.delete(ingredientIndex);
+      } else {
+        checked.add(ingredientIndex);
+      }
+
+      return {
+        ...current,
+        [recipeId]: Array.from(checked).sort((a, b) => a - b)
+      };
+    });
+  }
+
+  function resetIngredients(recipeId: string) {
+    setIngredientChecks((current) => {
+      const { [recipeId]: _recipeChecks, ...remaining } = current;
+      return remaining;
+    });
+  }
+
   function startNewRecipe() {
     const now = new Date().toISOString();
     setEditingRecipe({
@@ -346,9 +378,12 @@ export default function App() {
         ) : selectedRecipe ? (
           <RecipeDetail
             recipe={selectedRecipe}
+            checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
             onEdit={() => setEditingRecipe(selectedRecipe)}
             onDelete={() => void deleteRecipe(selectedRecipe)}
             onFavorite={() => toggleFavorite(selectedRecipe)}
+            onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
+            onResetIngredients={() => resetIngredients(selectedRecipe.id)}
           />
         ) : (
           <EmptyDetail onCreate={startNewRecipe} />
@@ -431,15 +466,24 @@ function RecipeList({
 
 function RecipeDetail({
   recipe,
+  checkedIngredientIndexes,
   onEdit,
   onDelete,
-  onFavorite
+  onFavorite,
+  onToggleIngredient,
+  onResetIngredients
 }: {
   recipe: Recipe;
+  checkedIngredientIndexes: number[];
   onEdit: () => void;
   onDelete: () => void;
   onFavorite: () => void;
+  onToggleIngredient: (ingredientIndex: number) => void;
+  onResetIngredients: () => void;
 }) {
+  const checkedIngredients = new Set(checkedIngredientIndexes);
+  const appliedCount = recipe.ingredients.filter((_, index) => checkedIngredients.has(index)).length;
+
   return (
     <article className="recipe-detail" id="recipe-detail">
       <div className="detail-head">
@@ -469,11 +513,34 @@ function RecipeDetail({
 
       <div className="recipe-columns">
         <section className="ingredient-panel" aria-labelledby="ingredients-heading">
-          <h3 id="ingredients-heading">Ingredients</h3>
-          <ul>
-            {recipe.ingredients.map((ingredient, index) => (
-              <li key={`${ingredient}-${index}`}>{ingredient}</li>
-            ))}
+          <div className="ingredient-panel-head">
+            <div>
+              <h3 id="ingredients-heading">Ingredients</h3>
+              <p>{appliedCount} of {recipe.ingredients.length} applied</p>
+            </div>
+            {appliedCount ? (
+              <button type="button" className="text-button" onClick={onResetIngredients}>
+                Reset
+              </button>
+            ) : null}
+          </div>
+          <ul className="ingredient-checklist">
+            {recipe.ingredients.map((ingredient, index) => {
+              const isChecked = checkedIngredients.has(index);
+              return (
+                <li key={`${ingredient}-${index}`} className={isChecked ? 'applied' : undefined}>
+                  <label className="ingredient-check">
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => onToggleIngredient(index)}
+                    />
+                    <span className="ingredient-checkmark" aria-hidden="true" />
+                    <span className="ingredient-text">{ingredient}</span>
+                  </label>
+                </li>
+              );
+            })}
           </ul>
         </section>
 
@@ -794,6 +861,49 @@ function upsertRecipeList(recipes: Recipe[], recipe: Recipe): Recipe[] {
     ? recipes.map((item) => (item.id === recipe.id ? recipe : item))
     : [...recipes, recipe];
   return next.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+function loadIngredientChecks(): IngredientChecks {
+  if (typeof window === 'undefined' || typeof window.localStorage?.getItem !== 'function') {
+    return {};
+  }
+
+  try {
+    const stored = window.localStorage.getItem(INGREDIENT_CHECKS_KEY);
+    if (!stored) {
+      return {};
+    }
+
+    const parsed = JSON.parse(stored) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(parsed).flatMap(([recipeId, indexes]) => {
+        if (!Array.isArray(indexes)) {
+          return [];
+        }
+
+        const normalized = indexes.filter((index): index is number => Number.isInteger(index) && index >= 0);
+        return normalized.length ? [[recipeId, normalized]] : [];
+      })
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveIngredientChecks(checks: IngredientChecks) {
+  if (typeof window === 'undefined' || typeof window.localStorage?.setItem !== 'function') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(INGREDIENT_CHECKS_KEY, JSON.stringify(checks));
+  } catch {
+    // Cooking progress is helpful, but never worth interrupting the recipe view.
+  }
 }
 
 function getErrorMessage(error: unknown): string {
