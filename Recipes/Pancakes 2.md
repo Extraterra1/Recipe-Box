@@ -1,4 +1,4 @@
-# Pancakes
+# Pancakes 2
 
 ## Ingredients
 

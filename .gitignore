@@ -12,3 +12,4 @@ vite.config.js
 .env
 .env.local
 .env.*.local
+.vercel

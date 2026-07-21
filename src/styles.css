@@ -761,8 +761,7 @@ textarea:disabled {
   .button:hover,
   .chip:hover,
   .tag:hover,
-  .icon-button:hover,
-  .recipe-row:hover {
+  .icon-button:hover {
     transform: translateY(-1px);
   }
 

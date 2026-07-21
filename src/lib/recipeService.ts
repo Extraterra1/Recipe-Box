@@ -10,7 +10,7 @@ type JoinCookbookResult = {
   id: string;
   name: string;
   invite_code: string;
-  role: 'editor';
+  role: 'owner' | 'editor';
 };
 
 export async function getSession(): Promise<Session | null> {
@@ -84,27 +84,17 @@ export async function ensureCookbook(session: Session | null): Promise<Cookbook>
   }
 
   const inviteCode = createInviteCode();
-  const { data: cookbook, error: cookbookError } = await supabase
-    .from('cookbooks')
-    .insert({ name: 'Household Recipe Box', owner_id: session.user.id, invite_code: inviteCode })
-    .select('id, name, invite_code')
-    .single();
+  const { data: cookbook, error: cookbookError } = await supabase.rpc('create_cookbook_for_current_user', {
+    requested_name: 'Household Recipe Box',
+    requested_invite_code: inviteCode
+  }).single();
 
   if (cookbookError) {
     throw cookbookError;
   }
 
-  const { error: memberError } = await supabase.from('cookbook_members').insert({
-    cookbook_id: cookbook.id,
-    user_id: session.user.id,
-    role: 'owner'
-  });
-
-  if (memberError) {
-    throw memberError;
-  }
-
-  return { id: cookbook.id, name: cookbook.name, inviteCode: cookbook.invite_code, role: 'owner' };
+  const created = cookbook as JoinCookbookResult;
+  return { id: created.id, name: created.name, inviteCode: created.invite_code, role: created.role };
 }
 
 export async function joinCookbookByInvite(session: Session | null, inviteCode: string): Promise<Cookbook> {
@@ -153,12 +143,10 @@ export async function loadRecipes(cookbookId: string): Promise<Recipe[]> {
 
 export async function seedRecipesIfNeeded(cookbookId: string, recipes: Recipe[]): Promise<Recipe[]> {
   const existing = await getCachedRecipes(cookbookId);
-  if (existing.length) {
-    return existing;
+  const seeded = existing.length ? existing : recipes.map((recipe) => ({ ...recipe, cookbookId }));
+  if (!existing.length) {
+    await cacheRecipes(cookbookId, seeded);
   }
-
-  const seeded = recipes.map((recipe) => ({ ...recipe, cookbookId }));
-  await cacheRecipes(cookbookId, seeded);
 
   const supabase = await getSupabaseClient();
   if (supabase && hasSupabaseConfig && navigator.onLine && cookbookId !== LOCAL_COOKBOOK_ID) {

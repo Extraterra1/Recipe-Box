@@ -1367,8 +1367,8 @@ export const seedRecipes: Recipe[] = [
     "updatedAt": "2026-05-14T00:00:00.000Z"
   },
   {
-    "id": "pancakes",
-    "title": "Pancakes",
+    "id": "pancakes-2",
+    "title": "Pancakes 2",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
