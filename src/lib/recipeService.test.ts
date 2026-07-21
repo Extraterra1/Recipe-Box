@@ -66,6 +66,7 @@ describe('seedRecipesIfNeeded', () => {
       id: 'pancakes',
       cookbookId: 'cookbook-1',
       title: 'Pancakes',
+      imageUrl: '',
       sourceLabel: '',
       sourceUrl: '',
       metadata: '',

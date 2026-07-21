@@ -6,6 +6,7 @@ const recipes: Recipe[] = [
   {
     id: 'pizza',
     title: 'NYC Pizza',
+    imageUrl: '',
     sourceLabel: 'Brian Lagerstrom',
     sourceUrl: '',
     metadata: '',
@@ -21,6 +22,7 @@ const recipes: Recipe[] = [
   {
     id: 'smoothie',
     title: 'Breakfast Fruit Smoothie',
+    imageUrl: '',
     sourceLabel: '',
     sourceUrl: '',
     metadata: '',

@@ -6,6 +6,7 @@ const recipe: Recipe = {
   id: 'cached-1',
   cookbookId: 'cookbook-1',
   title: 'Honey Garlic Chicken Breast',
+  imageUrl: '',
   sourceLabel: '',
   sourceUrl: '',
   metadata: '',
