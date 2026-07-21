@@ -72,6 +72,13 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .recipe-title { display: -webkit-box; overflow: hidden; font-size: 17px; font-weight: 600; line-height: 1.28; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .recipe-thumbnail { display: block; width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
 .recipe-thumbnail.placeholder { display: grid; place-items: center; background: var(--placeholder-surface); color: var(--placeholder-icon); }
+.navigation-count-skeleton { width: 2ch; height: 12px; border-radius: 3px; background: var(--separator); }
+.recipe-preview-skeleton { display: grid; gap: 14px; padding: 36px; }
+.recipe-preview-skeleton span { height: 16px; border-radius: 4px; background: var(--search-surface); }
+.recipe-preview-skeleton span:first-child { width: 48%; height: 30px; }
+.recipe-preview-skeleton span:nth-child(2) { width: 72%; }
+.recipe-preview-skeleton span:nth-child(3) { width: 88%; }
+.recipe-preview-skeleton span:nth-child(4) { width: 64%; }
 
 .recipe-detail, .editor-surface, .settings-surface, .empty-detail { min-width: 0; padding: 8px 0 24px; }
 .detail-head { display: grid; gap: 18px; margin-bottom: 22px; }
@@ -372,7 +379,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     padding: 34px clamp(28px, 5cqw, 64px) 64px;
   }
 
-  .desktop-preview-pane .screen-back { display: none; }
+  .desktop-preview-pane .recipe-detail .screen-back { display: none; }
   .detail-head { grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 24px; }
   .detail-actions { justify-content: flex-end; }
   .detail-actions .button { min-height: 38px; padding: 0 11px; font-size: 13px; }

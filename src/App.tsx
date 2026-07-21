@@ -108,6 +108,7 @@ export default function App() {
   const collectionScrollTop = useRef(0);
   const collectionWindowScrollTop = useRef(0);
   const preserveSelectionOnSettingsReturn = useRef(false);
+  const detailFilterSnapshot = useRef<{ selectedTags: string[]; favoritesOnly: boolean } | null>(null);
 
   useEffect(() => {
     void bootstrap();
@@ -140,7 +141,7 @@ export default function App() {
     () => sortRecipes(filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }), recipeSort),
     [favoritesOnly, query, recipeSort, recipes, selectedTags]
   );
-  const selectedRecipe = recipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
+  const selectedRecipe = filteredRecipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0];
 
   useLayoutEffect(() => {
     if (view !== 'detail') {
@@ -165,6 +166,8 @@ export default function App() {
     }
     if ((view === 'collection' || view === 'detail') && filteredRecipes.length && !filteredRecipes.some((recipe) => recipe.id === selectedId)) {
       setSelectedId(filteredRecipes[0].id);
+    } else if ((view === 'collection' || view === 'detail') && !filteredRecipes.length && selectedId) {
+      setSelectedId('');
     }
   }, [filteredRecipes, selectedId, view]);
 
@@ -355,6 +358,7 @@ export default function App() {
     rememberCollectionScroll();
     if (view !== 'settings') {
       setSettingsReturnView(view);
+      detailFilterSnapshot.current = view === 'detail' ? { selectedTags, favoritesOnly } : null;
     }
     setSettingsTarget(target);
     setView('settings');
@@ -421,6 +425,7 @@ export default function App() {
 
       <main className={`workspace desktop-workspace app-view-${view}`} data-view={view} data-mobile-view={view}>
         <LibraryNavigation
+          isLoading={isBootstrapping}
           recipeCount={recipes.length}
           favoriteCount={favoriteCount}
           tags={tags}
@@ -501,6 +506,7 @@ export default function App() {
           className="desktop-preview-pane"
           role="region"
           aria-label="Recipe preview"
+          aria-busy={isBootstrapping && (view === 'collection' || view === 'detail')}
           data-pane-content={view === 'settings' ? 'settings' : view === 'editor' ? 'editor' : 'preview'}
           data-mobile-state={view === 'collection' ? 'inactive' : 'active'}
         >
@@ -527,6 +533,10 @@ export default function App() {
               onSignOut={() => void signOut()}
               backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
               onBack={() => {
+                if (settingsReturnView === 'detail' && detailFilterSnapshot.current) {
+                  setSelectedTags(detailFilterSnapshot.current.selectedTags);
+                  setFavoritesOnly(detailFilterSnapshot.current.favoritesOnly);
+                }
                 preserveSelectionOnSettingsReturn.current = settingsReturnView === 'detail';
                 setView(settingsReturnView);
               }}
@@ -546,7 +556,9 @@ export default function App() {
               }}
             />
           ) : null}
-          {(view === 'collection' || view === 'detail') && selectedRecipe ? (
+          {isBootstrapping && (view === 'collection' || view === 'detail') ? (
+            <PreviewSkeleton />
+          ) : (view === 'collection' || view === 'detail') && selectedRecipe ? (
             <RecipeDetail
               recipe={selectedRecipe}
               showBack={view === 'detail'}
@@ -564,7 +576,7 @@ export default function App() {
               onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
               onResetIngredients={() => resetIngredients(selectedRecipe.id)}
             />
-          ) : view === 'detail' ? (
+          ) : view === 'collection' || view === 'detail' ? (
             <EmptyDetail onCreate={startNewRecipe} />
           ) : null}
         </section>
@@ -586,6 +598,7 @@ export default function App() {
 }
 
 export function LibraryNavigation({
+  isLoading,
   recipeCount,
   favoriteCount,
   tags,
@@ -600,6 +613,7 @@ export function LibraryNavigation({
   onImportExport,
   onSettings
 }: {
+  isLoading: boolean;
   recipeCount: number;
   favoriteCount: number;
   tags: string[];
@@ -627,24 +641,24 @@ export function LibraryNavigation({
         <button
           type="button"
           className={allRecipesActive ? 'library-navigation-row active' : 'library-navigation-row'}
-          aria-label={`All Recipes, ${recipeCount} recipes`}
+          aria-label={isLoading ? 'All Recipes, loading' : `All Recipes, ${recipeCount} recipes`}
           aria-current={allRecipesActive ? 'page' : undefined}
           onClick={onAllRecipes}
         >
           <BookOpen size={17} aria-hidden="true" />
           <span>All Recipes</span>
-          <span aria-hidden="true">{recipeCount}</span>
+          {isLoading ? <span className="navigation-count-skeleton" data-testid="navigation-count-skeleton" aria-hidden="true" /> : <span aria-hidden="true">{recipeCount}</span>}
         </button>
         <button
           type="button"
           className={favoritesOnly ? 'library-navigation-row active' : 'library-navigation-row'}
-          aria-label={`Browse favorites, ${favoriteCount} recipes`}
+          aria-label={isLoading ? 'Browse favorites, loading' : `Browse favorites, ${favoriteCount} recipes`}
           aria-pressed={favoritesOnly}
           onClick={onFavorites}
         >
           <Heart size={17} aria-hidden="true" />
           <span>Favorites</span>
-          <span aria-hidden="true">{favoriteCount}</span>
+          {isLoading ? <span className="navigation-count-skeleton" data-testid="navigation-count-skeleton" aria-hidden="true" /> : <span aria-hidden="true">{favoriteCount}</span>}
         </button>
       </div>
 
@@ -888,7 +902,7 @@ function RecipeDetail({
         <a className="source-link" href={recipe.sourceUrl} target="_blank" rel="noreferrer">
           View source: {recipe.sourceLabel || recipe.sourceUrl}
         </a>
-      ) : null}
+      ) : recipe.sourceLabel ? <p className="source-context">Source: {recipe.sourceLabel}</p> : null}
 
       <div className="recipe-columns">
         <section className="ingredient-panel" aria-labelledby="ingredients-heading">
@@ -903,7 +917,7 @@ function RecipeDetail({
               </button>
             ) : null}
           </div>
-          <ul className="ingredient-checklist">
+          {recipe.ingredients.length ? <ul className="ingredient-checklist">
             {recipe.ingredients.map((ingredient, index) => {
               const isChecked = checkedIngredients.has(index);
               return (
@@ -920,7 +934,14 @@ function RecipeDetail({
                 </li>
               );
             })}
-          </ul>
+          </ul> : (
+            <div className="empty-section">
+              <p>No ingredients saved yet.</p>
+              <button type="button" className="button subtle" onClick={onEdit}>
+                <Edit3 size={16} /> Add ingredients
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="direction-panel" aria-labelledby="directions-heading">
@@ -1169,7 +1190,7 @@ function SettingsPanel({
 
   return (
     <section className="settings-surface" aria-labelledby="settings-heading" ref={overviewRef}>
-      <button type="button" className="text-button screen-back" onClick={onBack}>
+      <button type="button" className="text-button screen-back settings-contextual-back" onClick={onBack}>
         <ChevronLeft size={18} /> {backLabel}
       </button>
       <div className="detail-head">
@@ -1308,6 +1329,17 @@ function EmptyDetail({ onCreate }: { onCreate: () => void }) {
         <Plus size={17} /> Create recipe
       </button>
     </section>
+  );
+}
+
+function PreviewSkeleton() {
+  return (
+    <div className="recipe-preview-skeleton" data-testid="recipe-preview-skeleton" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
   );
 }
 

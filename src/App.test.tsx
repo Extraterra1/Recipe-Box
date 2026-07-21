@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import App, { RecipeList, RecipeThumbnail, sortRecipes } from './App';
+import { seedRecipes } from './data/seedRecipes';
 import type { Recipe } from './lib/types';
 
 const imageRecipe: Recipe = {
@@ -23,6 +24,16 @@ const imageRecipe: Recipe = {
 };
 
 describe('Recipe Box app shell', () => {
+  it('shows stable navigation counts and preview skeletons during bootstrap', () => {
+    render(<App />);
+
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+    expect(within(navigation).queryByText(/^0$/)).not.toBeInTheDocument();
+    expect(within(navigation).getAllByTestId('navigation-count-skeleton')).toHaveLength(2);
+    const preview = screen.getByRole('region', { name: 'Recipe preview' });
+    expect(preview).toHaveAttribute('aria-busy', 'true');
+    expect(within(preview).getByTestId('recipe-preview-skeleton')).toBeInTheDocument();
+  });
   it('exposes library, index, and preview as persistent desktop workspace regions', async () => {
     const { container } = render(<App />);
 
@@ -210,6 +221,30 @@ describe('Recipe Box app shell', () => {
       expect(within(list).getByRole('button', { name: /Open Delivery Pizza/i })).toHaveClass('selected');
     });
     expect(screen.getByRole('heading', { name: 'Delivery Pizza' })).toBeInTheDocument();
+  });
+
+  it('shows an empty preview when search has no results', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search recipes' }), 'no recipe has this title');
+
+    expect(await screen.findByRole('heading', { name: 'No recipe selected' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '2 Dollar Burrito but Cheaper' })).not.toBeInTheDocument();
+  });
+
+  it('shows an empty favorites index and preview after unfavoriting the last favorite', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+    await waitFor(() => expect(within(navigation).getByRole('button', { name: /Browse favorites, 1 recipes/i })).toBeInTheDocument());
+    await userEvent.click(within(navigation).getByRole('button', { name: /Browse favorites/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+
+    expect(await screen.findByText('No recipes match your search or filters.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No recipe selected' })).toBeInTheDocument();
   });
   it('provides persistent library navigation with recipe, favorite, tag, and management destinations', async () => {
     render(<App />);
@@ -561,7 +596,9 @@ describe('Recipe Box app shell', () => {
     const title = screen.getByRole('textbox', { name: 'Title' });
     await userEvent.type(title, 'Summer pasta');
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Back to editor' }));
+    const backToEditor = screen.getByRole('button', { name: 'Back to editor' });
+    expect(backToEditor).toHaveClass('settings-contextual-back');
+    await userEvent.click(backToEditor);
 
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Summer pasta');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -721,5 +758,36 @@ describe('Recipe Box app shell', () => {
 
     expect(screen.getByText(/No directions saved yet/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Add directions/i })).toBeInTheDocument();
+  });
+
+  it('offers an edit action for empty ingredients and shows an unlinked source label', async () => {
+    render(<App />);
+
+    const original = seedRecipes.find((recipe) => recipe.title === 'Baguette')!;
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Source label' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Source label' }), 'Family notebook');
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Source URL' }));
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Ingredients' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+
+    expect(await screen.findByText('No ingredients saved yet.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add ingredients' })).toBeInTheDocument();
+    expect(screen.getByText('Source: Family notebook')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Family notebook/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    if (original.sourceUrl) {
+      await userEvent.type(screen.getByRole('textbox', { name: 'Source URL' }), original.sourceUrl);
+    }
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Source label' }));
+    if (original.sourceLabel) {
+      await userEvent.type(screen.getByRole('textbox', { name: 'Source label' }), original.sourceLabel);
+    }
+    await userEvent.type(screen.getByRole('textbox', { name: 'Ingredients' }), original.ingredients.join('\n'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+    await screen.findByRole('heading', { name: 'Baguette' });
   });
 });
