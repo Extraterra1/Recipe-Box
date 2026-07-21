@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -57,6 +57,30 @@ describe('Recipe Box app shell', () => {
     expect(search).toHaveValue('pizza');
     expect(within(navigation).getByRole('button', { name: /Browse favorites/i })).toHaveAttribute('aria-pressed', 'false');
     expect(within(navigation).getByRole('button', { name: /tag pizza/i })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows only favorited recipes in the central index from Favorites navigation', async () => {
+    render(<App />);
+
+    const initialList = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(initialList).getByRole('button', { name: /Open NYC Pizza/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+    await waitFor(() => {
+      expect(within(navigation).getByRole('button', { name: /Browse favorites, 1 recipes/i })).toBeInTheDocument();
+    });
+    await userEvent.click(within(navigation).getByRole('button', { name: /Browse favorites/i }));
+
+    const favoritesList = await screen.findByRole('list', { name: 'Recipes' });
+    expect(within(favoritesList).getByText('NYC Pizza')).toBeInTheDocument();
+    expect(within(favoritesList).queryByText('Baguette')).not.toBeInTheDocument();
+
+    await userEvent.click(within(favoritesList).getByRole('button', { name: /Open NYC Pizza/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+    await waitFor(() => {
+      expect(within(navigation).getByRole('button', { name: /Browse favorites, 0 recipes/i })).toBeInTheDocument();
+    });
   });
 
   it('opens create, settings, and existing data management from library navigation', async () => {
