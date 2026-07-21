@@ -1,5 +1,6 @@
 import {
   Archive,
+  BookOpen,
   CheckCircle2,
   Cloud,
   CloudOff,
@@ -21,7 +22,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
-import { filterRecipes, getAllTags, getRecipeSummary } from './lib/recipeSearch';
+import { filterRecipes } from './lib/recipeSearch';
 import {
   ensureCookbook,
   getSession,
@@ -61,8 +62,6 @@ export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [query, setQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [statusMessage, setStatusMessage] = useState('Getting the recipe drawer ready...');
@@ -82,10 +81,9 @@ export default function App() {
     saveIngredientChecks(ingredientChecks);
   }, [ingredientChecks]);
 
-  const tags = useMemo(() => getAllTags(recipes), [recipes]);
   const filteredRecipes = useMemo(
-    () => filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }),
-    [favoritesOnly, query, recipes, selectedTags]
+    () => filterRecipes(recipes, { query, tags: [], favoritesOnly: false }).sort((a, b) => a.title.localeCompare(b.title)),
+    [query, recipes]
   );
   const selectedRecipe = filteredRecipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
 
@@ -224,12 +222,6 @@ export default function App() {
     setLastDeleted(null);
   }
 
-  function toggleTag(tag: string) {
-    setSelectedTags((current) =>
-      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
-    );
-  }
-
   function toggleFavorite(recipe: Recipe) {
     void persistRecipe({ ...recipe, favorite: !recipe.favorite });
   }
@@ -290,20 +282,18 @@ export default function App() {
         Skip to recipe
       </a>
       <header className="topbar">
+        <div className="topbar-actions topbar-actions-leading">
+          <button type="button" className="icon-button" onClick={startNewRecipe} aria-label="Add recipe">
+            <Plus size={20} />
+          </button>
+        </div>
         <div className="brand-lockup">
           <span className="brand-mark" aria-hidden="true">
             <Archive size={22} />
           </span>
-          <div>
-            <p className="eyebrow">Household</p>
-            <h1>Recipe Box</h1>
-          </div>
+          <h1>Recipe Box</h1>
         </div>
         <div className="topbar-actions">
-          <SyncBadge state={syncState} message={statusMessage} />
-          <button type="button" className="icon-button" onClick={() => void refreshRecipes()} aria-label="Sync now">
-            <RefreshCcw size={18} />
-          </button>
           <button
             type="button"
             className={activePanel === 'settings' ? 'icon-button active' : 'icon-button'}
@@ -323,38 +313,13 @@ export default function App() {
               Search recipes
             </label>
             <input
+              type="search"
               id="recipe-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search recipes"
               autoComplete="off"
             />
-          </div>
-
-          <div className="rail-toolbar" aria-label="Recipe filters">
-            <button
-              type="button"
-              className={favoritesOnly ? 'chip selected' : 'chip'}
-              onClick={() => setFavoritesOnly((value) => !value)}
-            >
-              <Heart size={15} /> Favorites
-            </button>
-            <button type="button" className="chip action" onClick={startNewRecipe}>
-              <Plus size={15} /> Create recipe
-            </button>
-          </div>
-
-          <div className="tag-strip" aria-label="Tags">
-            {tags.map((tag) => (
-              <button
-                type="button"
-                key={tag}
-                className={selectedTags.includes(tag) ? 'tag selected' : 'tag'}
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
-              </button>
-            ))}
           </div>
 
           <RecipeList
@@ -366,7 +331,6 @@ export default function App() {
               setPendingDeleteId('');
               setActivePanel('recipes');
             }}
-            onFavorite={toggleFavorite}
           />
         </aside>
 
@@ -376,11 +340,14 @@ export default function App() {
             authEmail={authEmail}
             inviteCode={inviteCode}
             recipes={recipes}
+            syncState={syncState}
+            statusMessage={statusMessage}
             onAuthEmailChange={setAuthEmail}
             onInviteCodeChange={setInviteCode}
             onMagicLink={submitMagicLink}
             onInvite={submitInvite}
             onImportMarkdown={(value) => void importMarkdown(value)}
+            onRefresh={() => void refreshRecipes()}
             onSignOut={() => void signOut()}
           />
         ) : editingRecipe ? (
@@ -437,13 +404,11 @@ function SyncBadge({ state, message }: { state: SyncState; message: string }) {
 function RecipeList({
   recipes,
   selectedId,
-  onSelect,
-  onFavorite
+  onSelect
 }: {
   recipes: Recipe[];
   selectedId?: string;
   onSelect: (recipe: Recipe) => void;
-  onFavorite: (recipe: Recipe) => void;
 }) {
   if (!recipes.length) {
     return (
@@ -463,23 +428,38 @@ function RecipeList({
             onClick={() => onSelect(recipe)}
             aria-label={`Open ${recipe.title}`}
           >
-            <span className="recipe-row-main">
-              <span className="recipe-title">{recipe.title}</span>
-              <span className="recipe-meta">{getRecipeSummary(recipe)}</span>
-            </span>
-            <span className="recipe-row-tags">{recipe.tags.slice(0, 2).join(' · ')}</span>
-          </button>
-          <button
-            type="button"
-            className={recipe.favorite ? 'favorite-button active' : 'favorite-button'}
-            aria-label={recipe.favorite ? `Unfavorite ${recipe.title}` : `Favorite ${recipe.title}`}
-            onClick={() => onFavorite(recipe)}
-          >
-            <Heart size={16} fill="currentColor" />
+            <span className="recipe-title">{recipe.title}</span>
+            <RecipeThumbnail recipe={recipe} />
           </button>
         </li>
       ))}
     </ul>
+  );
+}
+
+export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
+  if (recipe.imageUrl) {
+    return (
+      <img
+        className="recipe-thumbnail"
+        src={recipe.imageUrl}
+        alt=""
+        loading="lazy"
+        width="56"
+        height="56"
+      />
+    );
+  }
+
+  return (
+    <span
+      className="recipe-thumbnail placeholder"
+      data-testid="recipe-thumbnail-placeholder"
+      aria-hidden="true"
+      style={{ width: 56, height: 56, flex: '0 0 56px' }}
+    >
+      <BookOpen size={22} strokeWidth={1.75} />
+    </span>
   );
 }
 
@@ -761,22 +741,28 @@ function SettingsPanel({
   authEmail,
   inviteCode,
   recipes,
+  syncState,
+  statusMessage,
   onAuthEmailChange,
   onInviteCodeChange,
   onMagicLink,
   onInvite,
   onImportMarkdown,
+  onRefresh,
   onSignOut
 }: {
   cookbook: Cookbook | null;
   authEmail: string;
   inviteCode: string;
   recipes: Recipe[];
+  syncState: SyncState;
+  statusMessage: string;
   onAuthEmailChange: (value: string) => void;
   onInviteCodeChange: (value: string) => void;
   onMagicLink: (event: FormEvent<HTMLFormElement>) => void;
   onInvite: (event: FormEvent<HTMLFormElement>) => void;
   onImportMarkdown: (markdown: string) => void;
+  onRefresh: () => void;
   onSignOut: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
@@ -793,6 +779,14 @@ function SettingsPanel({
       </div>
 
       <div className="settings-grid">
+        <section className="settings-section">
+          <h3>Sync</h3>
+          <SyncBadge state={syncState} message={statusMessage} />
+          <button type="button" className="button subtle" onClick={onRefresh}>
+            <RefreshCcw size={16} /> Sync now
+          </button>
+        </section>
+
         <section className="settings-section">
           <h3>Supabase</h3>
           {hasSupabaseConfig ? (

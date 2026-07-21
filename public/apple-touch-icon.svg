@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Recipe Box">
-  <rect width="180" height="180" rx="42" fill="#f7eee7"/>
-  <path d="M45 62c0-12 10-22 22-22h48c12 0 22 10 22 22v76H45V62Z" fill="#d7644d"/>
-  <path d="M66 40h49v28H66z" fill="#f4d46b"/>
-  <path d="M67 91h49M67 111h34" stroke="#fff8ed" stroke-width="10" stroke-linecap="round"/>
+  <rect width="180" height="180" rx="40" fill="oklch(98% 0.006 55)"/>
+  <rect x="34" y="28" width="112" height="124" rx="25" fill="oklch(48% 0.145 28)"/>
+  <path d="M62 56h62v68H62c-12 0-20-8-20-20V76c0-12 8-20 20-20Z" fill="oklch(94.5% 0.009 50)"/>
+  <path d="M70 76h34M70 90h42M70 104h26" stroke="oklch(48% 0.145 28)" stroke-width="7" stroke-linecap="round"/>
 </svg>

@@ -1,14 +1,64 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import App from './App';
+import App, { RecipeThumbnail } from './App';
+import type { Recipe } from './lib/types';
+
+const imageRecipe: Recipe = {
+  id: 'photo-recipe',
+  title: 'Photo Recipe',
+  imageUrl: 'https://example.com/recipe.jpg',
+  sourceLabel: '',
+  sourceUrl: '',
+  metadata: '',
+  ingredients: [],
+  directions: [],
+  notes: [],
+  nutrition: [],
+  tags: [],
+  favorite: false,
+  createdAt: '',
+  updatedAt: ''
+};
 
 describe('Recipe Box app shell', () => {
+  it('shows identity, search, and an alphabetical title-led recipe list', async () => {
+    render(<App />);
+
+    const heading = await screen.findByRole('heading', { name: 'Recipe Box' });
+    const search = screen.getByRole('searchbox', { name: 'Search recipes' });
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+
+    expect(heading.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(search.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const rows = within(list).getAllByRole('button');
+    expect(rows[0]).toHaveAccessibleName(/Open 2 Dollar Burrito but Cheaper/i);
+
+    const baguette = within(list).getByRole('button', { name: /Open Baguette/i });
+    expect(within(baguette).getByText('Baguette')).toBeInTheDocument();
+    expect(within(baguette).getByTestId('recipe-thumbnail-placeholder')).toBeInTheDocument();
+    expect(within(list).queryByText(/Servings:/i)).not.toBeInTheDocument();
+    expect(within(list).queryByRole('button', { name: /favorite/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /Recipe filters/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Tags')).not.toBeInTheDocument();
+  });
+
+  it('uses a decorative lazy-loaded image when a recipe has a thumbnail URL', () => {
+    render(<RecipeThumbnail recipe={imageRecipe} />);
+
+    const image = screen.getByRole('presentation');
+    expect(image).toHaveAttribute('src', imageRecipe.imageUrl);
+    expect(image).toHaveAttribute('alt', '');
+    expect(image).toHaveAttribute('loading', 'lazy');
+    expect(screen.queryByTestId('recipe-thumbnail-placeholder')).not.toBeInTheDocument();
+  });
+
   it('shows seeded recipes, searches them, and opens a readable detail pane', async () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /Recipe Box/i })).toBeInTheDocument();
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
+    await screen.findByRole('list', { name: /Recipes/i });
 
     await userEvent.type(screen.getByLabelText(/Search recipes/i), 'pizza');
 
@@ -25,9 +75,7 @@ describe('Recipe Box app shell', () => {
   it('lets cooks mark ingredients as applied while reading a recipe', async () => {
     render(<App />);
 
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
-
-    const ingredient = screen.getByRole('checkbox', { name: /Tortillas/i });
+    const ingredient = await screen.findByRole('checkbox', { name: /Tortillas/i });
     expect(ingredient).not.toBeChecked();
     expect(screen.getByText(/0 of 45 applied/i)).toBeInTheDocument();
 
@@ -40,10 +88,9 @@ describe('Recipe Box app shell', () => {
   it('keeps unavailable cloud actions disabled in local mode', async () => {
     render(<App />);
 
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
-
     await userEvent.click(screen.getByLabelText(/Open household settings/i));
 
+    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Send magic link/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Join household/i })).toBeDisabled();
     expect(screen.getByLabelText(/Email/i)).toBeDisabled();
@@ -53,9 +100,7 @@ describe('Recipe Box app shell', () => {
   it('asks for confirmation before deleting a recipe', async () => {
     render(<App />);
 
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Delete$/i }));
 
     expect(screen.getByRole('button', { name: /Confirm delete/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /2 Dollar Burrito but Cheaper/i })).toBeInTheDocument();
@@ -64,9 +109,7 @@ describe('Recipe Box app shell', () => {
   it('explains when a recipe has no directions yet', async () => {
     render(<App />);
 
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
-
-    const list = screen.getByRole('list', { name: /Recipes/i });
+    const list = await screen.findByRole('list', { name: /Recipes/i });
     await userEvent.click(within(list).getByRole('button', { name: /Open Birthday Cake/i }));
 
     expect(screen.getByText(/No directions saved yet/i)).toBeInTheDocument();

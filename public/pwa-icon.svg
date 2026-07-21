@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Recipe Box">
-  <rect width="512" height="512" rx="112" fill="#f7eee7"/>
-  <path d="M128 178c0-35 28-63 63-63h134c35 0 63 28 63 63v216H128V178Z" fill="#d7644d"/>
-  <path d="M189 115h136v80H189z" fill="#f4d46b"/>
-  <path d="M192 260h136M192 315h96" stroke="#fff8ed" stroke-width="30" stroke-linecap="round"/>
-  <circle cx="366" cy="138" r="31" fill="#9fdaba"/>
+  <rect width="512" height="512" rx="112" fill="oklch(98% 0.006 55)"/>
+  <rect x="96" y="80" width="320" height="352" rx="72" fill="oklch(48% 0.145 28)"/>
+  <path d="M176 160h176v192H176c-34 0-56-22-56-56v-80c0-34 22-56 56-56Z" fill="oklch(94.5% 0.009 50)"/>
+  <path d="M200 216h96M200 256h120M200 296h72" stroke="oklch(48% 0.145 28)" stroke-width="20" stroke-linecap="round"/>
 </svg>
