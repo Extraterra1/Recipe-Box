@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App, { RecipeThumbnail } from './App';
@@ -52,6 +52,23 @@ describe('Recipe Box app shell', () => {
     expect(image).toHaveAttribute('alt', '');
     expect(image).toHaveAttribute('loading', 'lazy');
     expect(screen.queryByTestId('recipe-thumbnail-placeholder')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the stable placeholder when a thumbnail fails to load', () => {
+    const { rerender } = render(<RecipeThumbnail recipe={imageRecipe} />);
+
+    fireEvent.error(screen.getByRole('presentation'));
+    expect(screen.getByTestId('recipe-thumbnail-placeholder')).toBeInTheDocument();
+
+    rerender(
+      <RecipeThumbnail
+        recipe={{ ...imageRecipe, imageUrl: 'https://example.com/replacement.jpg' }}
+      />
+    );
+    expect(screen.getByRole('presentation')).toHaveAttribute(
+      'src',
+      'https://example.com/replacement.jpg'
+    );
   });
 
   it('keeps utility actions quiet in the header and recipe filters available in settings', async () => {

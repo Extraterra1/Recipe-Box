@@ -452,7 +452,13 @@ function RecipeList({
 }
 
 export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
-  if (recipe.imageUrl) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [recipe.imageUrl]);
+
+  if (recipe.imageUrl && !imageFailed) {
     return (
       <img
         className="recipe-thumbnail"
@@ -461,6 +467,7 @@ export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
         loading="lazy"
         width="56"
         height="56"
+        onError={() => setImageFailed(true)}
       />
     );
   }
