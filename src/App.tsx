@@ -22,7 +22,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
-import { filterRecipes } from './lib/recipeSearch';
+import { filterRecipes, getAllTags } from './lib/recipeSearch';
 import {
   ensureCookbook,
   getSession,
@@ -62,6 +62,8 @@ export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [query, setQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [statusMessage, setStatusMessage] = useState('Getting the recipe drawer ready...');
@@ -81,9 +83,10 @@ export default function App() {
     saveIngredientChecks(ingredientChecks);
   }, [ingredientChecks]);
 
+  const tags = useMemo(() => getAllTags(recipes), [recipes]);
   const filteredRecipes = useMemo(
-    () => filterRecipes(recipes, { query, tags: [], favoritesOnly: false }).sort((a, b) => a.title.localeCompare(b.title)),
-    [query, recipes]
+    () => filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }).sort((a, b) => a.title.localeCompare(b.title)),
+    [favoritesOnly, query, recipes, selectedTags]
   );
   const selectedRecipe = filteredRecipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
 
@@ -222,6 +225,12 @@ export default function App() {
     setLastDeleted(null);
   }
 
+  function toggleTag(tag: string) {
+    setSelectedTags((current) =>
+      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]
+    );
+  }
+
   function toggleFavorite(recipe: Recipe) {
     void persistRecipe({ ...recipe, favorite: !recipe.favorite });
   }
@@ -342,12 +351,17 @@ export default function App() {
             recipes={recipes}
             syncState={syncState}
             statusMessage={statusMessage}
+            tags={tags}
+            selectedTags={selectedTags}
+            favoritesOnly={favoritesOnly}
             onAuthEmailChange={setAuthEmail}
             onInviteCodeChange={setInviteCode}
             onMagicLink={submitMagicLink}
             onInvite={submitInvite}
             onImportMarkdown={(value) => void importMarkdown(value)}
             onRefresh={() => void refreshRecipes()}
+            onToggleTag={toggleTag}
+            onToggleFavorites={() => setFavoritesOnly((value) => !value)}
             onSignOut={() => void signOut()}
           />
         ) : editingRecipe ? (
@@ -743,12 +757,17 @@ function SettingsPanel({
   recipes,
   syncState,
   statusMessage,
+  tags,
+  selectedTags,
+  favoritesOnly,
   onAuthEmailChange,
   onInviteCodeChange,
   onMagicLink,
   onInvite,
   onImportMarkdown,
   onRefresh,
+  onToggleTag,
+  onToggleFavorites,
   onSignOut
 }: {
   cookbook: Cookbook | null;
@@ -757,12 +776,17 @@ function SettingsPanel({
   recipes: Recipe[];
   syncState: SyncState;
   statusMessage: string;
+  tags: string[];
+  selectedTags: string[];
+  favoritesOnly: boolean;
   onAuthEmailChange: (value: string) => void;
   onInviteCodeChange: (value: string) => void;
   onMagicLink: (event: FormEvent<HTMLFormElement>) => void;
   onInvite: (event: FormEvent<HTMLFormElement>) => void;
   onImportMarkdown: (markdown: string) => void;
   onRefresh: () => void;
+  onToggleTag: (tag: string) => void;
+  onToggleFavorites: () => void;
   onSignOut: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
@@ -779,6 +803,35 @@ function SettingsPanel({
       </div>
 
       <div className="settings-grid">
+        <section className="settings-section">
+          <h3>Recipe filters</h3>
+          <div role="group" aria-label="Recipe filters">
+            <div className="rail-toolbar">
+              <button
+                type="button"
+                className={favoritesOnly ? 'chip selected' : 'chip'}
+                aria-pressed={favoritesOnly}
+                onClick={onToggleFavorites}
+              >
+                <Heart size={15} /> Favorites
+              </button>
+            </div>
+            <div className="tag-strip" aria-label="Tags">
+              {tags.map((tag) => (
+                <button
+                  type="button"
+                  key={tag}
+                  className={selectedTags.includes(tag) ? 'tag selected' : 'tag'}
+                  aria-pressed={selectedTags.includes(tag)}
+                  onClick={() => onToggleTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="settings-section">
           <h3>Sync</h3>
           <SyncBadge state={syncState} message={statusMessage} />

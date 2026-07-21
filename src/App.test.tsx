@@ -54,6 +54,38 @@ describe('Recipe Box app shell', () => {
     expect(screen.queryByTestId('recipe-thumbnail-placeholder')).not.toBeInTheDocument();
   });
 
+  it('keeps utility actions quiet in the header and recipe filters available in settings', async () => {
+    render(<App />);
+
+    const header = screen.getByRole('banner');
+    expect(within(header).getByRole('button', { name: 'Add recipe' })).toBeInTheDocument();
+    const settingsButton = within(header).getByRole('button', { name: 'Open household settings' });
+    expect(within(header).queryByText(/Offline ready/i)).not.toBeInTheDocument();
+    expect(within(header).queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(settingsButton);
+
+    const settings = screen.getByRole('region', { name: /Recipe Box/i });
+    expect(await within(settings).findByText(/Offline ready/i)).toBeInTheDocument();
+    expect(within(settings).getByRole('button', { name: 'Sync now' })).toBeInTheDocument();
+
+    const filters = within(settings).getByRole('group', { name: 'Recipe filters' });
+    expect(within(filters).getByRole('button', { name: 'Favorites' })).toBeInTheDocument();
+    await userEvent.click(within(filters).getByRole('button', { name: 'pizza' }));
+    await userEvent.click(settingsButton);
+
+    const pizzaList = screen.getByRole('list', { name: 'Recipes' });
+    expect(within(pizzaList).getByText('NYC Pizza')).toBeInTheDocument();
+    expect(within(pizzaList).queryByText('Breakfast Fruit Smoothie')).not.toBeInTheDocument();
+
+    await userEvent.click(settingsButton);
+    await userEvent.click(screen.getByRole('button', { name: 'Favorites' }));
+    await userEvent.click(settingsButton);
+
+    expect(screen.getByText('No recipes match that search.')).toBeInTheDocument();
+  });
+
   it('shows seeded recipes, searches them, and opens a readable detail pane', async () => {
     render(<App />);
 
