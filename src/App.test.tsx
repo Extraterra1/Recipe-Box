@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import App, { RecipeThumbnail } from './App';
 import type { Recipe } from './lib/types';
 
@@ -151,6 +151,18 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
   });
 
+  it('keeps the original detail target when settings filters exclude it', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.click(screen.getByRole('button', { name: 'pizza' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipe' }));
+
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+  });
+
   it('returns from settings to an intact editor draft', async () => {
     render(<App />);
 
@@ -166,35 +178,48 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
   });
 
-  it('restores collection scroll context after returning from detail', async () => {
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 420 });
+  it('keeps an existing editor target and draft when settings filters exclude it', async () => {
     render(<App />);
 
     const list = await screen.findByRole('list', { name: 'Recipes' });
     await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
-    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    const title = screen.getByRole('textbox', { name: 'Title' });
+    await userEvent.clear(title);
+    await userEvent.type(title, 'Baguette draft');
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.click(screen.getByRole('button', { name: 'pizza' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to editor' }));
 
-    expect(scrollTo).toHaveBeenLastCalledWith({ top: 420 });
-    scrollTo.mockRestore();
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+    expect(screen.getByRole('heading', { name: 'Edit Baguette' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Baguette draft');
   });
 
-  it('does not replace collection scroll context when selecting in the wide rail', async () => {
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 420 });
+  it('restores collection scroll context after returning from detail', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    list.scrollTop = 420;
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+
+    expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 420);
+  });
+
+  it('restores recipe-list scroll after settings and editor round trips', async () => {
     render(<App />);
 
     let list = await screen.findByRole('list', { name: 'Recipes' });
-    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 900 });
-    list = screen.getByRole('list', { name: 'Recipes' });
-    await userEvent.click(within(list).getByRole('button', { name: /Open Birthday Cake/i }));
+    list.scrollTop = 310;
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+    list = screen.getByRole('list', { name: 'Recipes' });
+    expect(list).toHaveProperty('scrollTop', 310);
 
-    expect(scrollTo).toHaveBeenLastCalledWith({ top: 420 });
-    scrollTo.mockRestore();
-    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+    list.scrollTop = 260;
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 260);
   });
 
   it('gives settings and the editor explicit return actions', async () => {

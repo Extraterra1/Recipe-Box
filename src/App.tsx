@@ -19,7 +19,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
@@ -78,7 +78,8 @@ export default function App() {
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
   const [ingredientChecks, setIngredientChecks] = useState<IngredientChecks>(() => loadIngredientChecks());
   const [pendingDeleteId, setPendingDeleteId] = useState('');
-  const collectionScrollY = useRef<number | null>(null);
+  const recipeListRef = useRef<HTMLUListElement | null>(null);
+  const collectionScrollTop = useRef(0);
 
   useEffect(() => {
     void bootstrap();
@@ -89,8 +90,8 @@ export default function App() {
   }, [ingredientChecks]);
 
   useEffect(() => {
-    if (view === 'collection' && collectionScrollY.current !== null && collectionScrollY.current > 0) {
-      window.scrollTo({ top: collectionScrollY.current });
+    if ((view === 'collection' || view === 'detail') && recipeListRef.current) {
+      recipeListRef.current.scrollTop = collectionScrollTop.current;
     }
   }, [view]);
 
@@ -99,7 +100,7 @@ export default function App() {
     () => filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }).sort((a, b) => a.title.localeCompare(b.title)),
     [favoritesOnly, query, recipes, selectedTags]
   );
-  const selectedRecipe = filteredRecipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
+  const selectedRecipe = recipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
 
   useEffect(() => {
     if (!selectedId && selectedRecipe) {
@@ -108,11 +109,10 @@ export default function App() {
   }, [selectedId, selectedRecipe]);
 
   useEffect(() => {
-    if (filteredRecipes.length && !filteredRecipes.some((recipe) => recipe.id === selectedId)) {
+    if (view === 'collection' && filteredRecipes.length && !filteredRecipes.some((recipe) => recipe.id === selectedId)) {
       setSelectedId(filteredRecipes[0].id);
-      setEditingRecipe(null);
     }
-  }, [filteredRecipes, selectedId]);
+  }, [filteredRecipes, selectedId, view]);
 
   async function bootstrap() {
     setSyncState(navigator.onLine ? 'syncing' : 'offline');
@@ -283,9 +283,7 @@ export default function App() {
   }
 
   function startNewRecipe() {
-    if (view === 'collection') {
-      collectionScrollY.current = window.scrollY;
-    }
+    rememberCollectionScroll();
     const now = new Date().toISOString();
     setEditingRecipe({
       ...BLANK_RECIPE,
@@ -295,6 +293,12 @@ export default function App() {
     });
     setEditorReturnView(view === 'detail' ? 'detail' : 'collection');
     setView('editor');
+  }
+
+  function rememberCollectionScroll() {
+    if (recipeListRef.current) {
+      collectionScrollTop.current = recipeListRef.current.scrollTop;
+    }
   }
 
   async function importMarkdown(markdown: string) {
@@ -324,9 +328,7 @@ export default function App() {
             type="button"
             className={view === 'settings' ? 'icon-button active' : 'icon-button'}
             onClick={() => {
-              if (view === 'collection') {
-                collectionScrollY.current = window.scrollY;
-              }
+              rememberCollectionScroll();
               if (view !== 'settings') {
                 setSettingsReturnView(view);
               }
@@ -361,11 +363,12 @@ export default function App() {
           </div>
 
           <RecipeList
+            listRef={recipeListRef}
             recipes={filteredRecipes}
             selectedId={selectedRecipe?.id}
             onSelect={(recipe) => {
               if (view === 'collection') {
-                collectionScrollY.current = window.scrollY;
+                rememberCollectionScroll();
               }
               setSelectedId(recipe.id);
               setEditingRecipe(null);
@@ -461,10 +464,12 @@ function SyncBadge({ state, message }: { state: SyncState; message: string }) {
 }
 
 function RecipeList({
+  listRef,
   recipes,
   selectedId,
   onSelect
 }: {
+  listRef: RefObject<HTMLUListElement | null>;
   recipes: Recipe[];
   selectedId?: string;
   onSelect: (recipe: Recipe) => void;
@@ -478,7 +483,7 @@ function RecipeList({
   }
 
   return (
-    <ul className="recipe-list" aria-label="Recipes">
+    <ul ref={listRef} className="recipe-list" aria-label="Recipes">
       {recipes.map((recipe) => (
         <li key={recipe.id}>
           <button
