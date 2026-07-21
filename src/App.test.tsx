@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App, { RecipeThumbnail } from './App';
 import type { Recipe } from './lib/types';
 
@@ -204,6 +204,16 @@ describe('Recipe Box app shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
     expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 420);
+  });
+
+  it('starts a newly opened screen at the top of the mobile document', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
   });
 
   it('restores recipe-list scroll after settings and editor round trips', async () => {

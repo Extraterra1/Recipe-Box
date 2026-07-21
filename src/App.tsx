@@ -19,7 +19,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
@@ -80,6 +80,7 @@ export default function App() {
   const [pendingDeleteId, setPendingDeleteId] = useState('');
   const recipeListRef = useRef<HTMLUListElement | null>(null);
   const collectionScrollTop = useRef(0);
+  const collectionWindowScrollTop = useRef(0);
 
   useEffect(() => {
     void bootstrap();
@@ -93,6 +94,13 @@ export default function App() {
     if ((view === 'collection' || view === 'detail') && recipeListRef.current) {
       recipeListRef.current.scrollTop = collectionScrollTop.current;
     }
+  }, [view]);
+
+  useLayoutEffect(() => {
+    window.scrollTo({
+      top: view === 'collection' ? collectionWindowScrollTop.current : 0,
+      behavior: 'instant'
+    });
   }, [view]);
 
   const tags = useMemo(() => getAllTags(recipes), [recipes]);
@@ -298,6 +306,9 @@ export default function App() {
   function rememberCollectionScroll() {
     if (recipeListRef.current) {
       collectionScrollTop.current = recipeListRef.current.scrollTop;
+    }
+    if (view === 'collection') {
+      collectionWindowScrollTop.current = window.scrollY;
     }
   }
 
