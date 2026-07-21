@@ -90,7 +90,7 @@ export default function App() {
     saveIngredientChecks(ingredientChecks);
   }, [ingredientChecks]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if ((view === 'collection' || view === 'detail') && recipeListRef.current) {
       recipeListRef.current.scrollTop = collectionScrollTop.current;
     }
@@ -109,6 +109,16 @@ export default function App() {
     [favoritesOnly, query, recipes, selectedTags]
   );
   const selectedRecipe = recipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
+
+  useLayoutEffect(() => {
+    if (view !== 'detail') {
+      return;
+    }
+
+    recipeListRef.current
+      ?.querySelector<HTMLElement>('.recipe-row.selected')
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [selectedId, view]);
 
   useEffect(() => {
     if (!selectedId && selectedRecipe) {

@@ -216,6 +216,22 @@ describe('Recipe Box app shell', () => {
     expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
   });
 
+  it('keeps a lower selected recipe visible when it becomes wide-rail context', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+    scrollIntoView.mockClear();
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    const lowerRecipe = within(list).getByRole('button', {
+      name: /Open The Easiest Actually Good Bread/i
+    });
+    await userEvent.click(lowerRecipe);
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView.mock.instances[0]).toBe(lowerRecipe);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+  });
+
   it('restores recipe-list scroll after settings and editor round trips', async () => {
     render(<App />);
 
