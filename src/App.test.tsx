@@ -171,6 +171,46 @@ describe('Recipe Box app shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipe' }));
     expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
   });
+
+  it('returns an active editor to the same preview on Escape with navigation and index mounted', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Library navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+  });
+
+  it('does not let Escape cancel an editor hidden behind settings', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Title' }), 'Hidden draft');
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.getByRole('region', { name: /Recipe Box$/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Back to editor' }));
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Hidden draft');
+  });
+
+  it('reconciles detail selection and preview when search excludes the selected recipe', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search recipes' }), 'pizza');
+
+    await waitFor(() => {
+      expect(within(list).getByRole('button', { name: /Open Delivery Pizza/i })).toHaveClass('selected');
+    });
+    expect(screen.getByRole('heading', { name: 'Delivery Pizza' })).toBeInTheDocument();
+  });
   it('provides persistent library navigation with recipe, favorite, tag, and management destinations', async () => {
     render(<App />);
 

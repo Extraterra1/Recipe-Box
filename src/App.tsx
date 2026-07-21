@@ -107,6 +107,7 @@ export default function App() {
   const recipeListRef = useRef<HTMLUListElement | null>(null);
   const collectionScrollTop = useRef(0);
   const collectionWindowScrollTop = useRef(0);
+  const preserveSelectionOnSettingsReturn = useRef(false);
 
   useEffect(() => {
     void bootstrap();
@@ -158,7 +159,11 @@ export default function App() {
   }, [selectedId, selectedRecipe]);
 
   useEffect(() => {
-    if (view === 'collection' && filteredRecipes.length && !filteredRecipes.some((recipe) => recipe.id === selectedId)) {
+    if (preserveSelectionOnSettingsReturn.current && view === 'detail') {
+      preserveSelectionOnSettingsReturn.current = false;
+      return;
+    }
+    if ((view === 'collection' || view === 'detail') && filteredRecipes.length && !filteredRecipes.some((recipe) => recipe.id === selectedId)) {
       setSelectedId(filteredRecipes[0].id);
     }
   }, [filteredRecipes, selectedId, view]);
@@ -521,7 +526,10 @@ export default function App() {
               onToggleFavorites={() => setFavoritesOnly((value) => !value)}
               onSignOut={() => void signOut()}
               backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
-              onBack={() => setView(settingsReturnView)}
+              onBack={() => {
+                preserveSelectionOnSettingsReturn.current = settingsReturnView === 'detail';
+                setView(settingsReturnView);
+              }}
             />
           ) : null}
           {(view === 'editor' || (view === 'settings' && settingsReturnView === 'editor')) && editingRecipe ? (
@@ -974,6 +982,21 @@ function RecipeEditor({
   onSave: (recipe: Recipe) => void;
 }) {
   const [draft, setDraft] = useState(recipeToDraft(recipe));
+
+  useEffect(() => {
+    if (inactive) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !event.defaultPrevented && !event.isComposing) {
+        onCancel();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [inactive, onCancel]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
