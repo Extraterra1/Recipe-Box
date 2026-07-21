@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App, { RecipeThumbnail } from './App';
 import type { Recipe } from './lib/types';
 
@@ -90,15 +90,15 @@ describe('Recipe Box app shell', () => {
     const filters = within(settings).getByRole('group', { name: 'Recipe filters' });
     expect(within(filters).getByRole('button', { name: 'Favorites' })).toBeInTheDocument();
     await userEvent.click(within(filters).getByRole('button', { name: 'pizza' }));
-    await userEvent.click(settingsButton);
+    await userEvent.click(within(settings).getByRole('button', { name: 'Back to recipes' }));
 
     const pizzaList = screen.getByRole('list', { name: 'Recipes' });
     expect(within(pizzaList).getByText('NYC Pizza')).toBeInTheDocument();
     expect(within(pizzaList).queryByText('Breakfast Fruit Smoothie')).not.toBeInTheDocument();
 
-    await userEvent.click(settingsButton);
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
     await userEvent.click(screen.getByRole('button', { name: 'Favorites' }));
-    await userEvent.click(settingsButton);
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
     expect(screen.getByText('No recipes match that search.')).toBeInTheDocument();
   });
@@ -121,10 +121,81 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('heading', { name: /Ingredients/i })).toBeInTheDocument();
   });
 
+  it('returns from detail without clearing the active search', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    const search = screen.getByRole('searchbox', { name: 'Search recipes' });
+    expect(screen.queryByRole('button', { name: 'Back to recipes' })).not.toBeInTheDocument();
+
+    await userEvent.type(search, 'pizza');
+    await userEvent.click(within(list).getByRole('button', { name: /Open NYC Pizza/i }));
+
+    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+
+    expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toHaveValue('pizza');
+    expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
+  });
+
+  it('restores collection scroll context after returning from detail', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 420 });
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 420 });
+    scrollTo.mockRestore();
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+  });
+
+  it('gives settings and the editor explicit return actions', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
+  });
+
+  it('cancels editing an existing recipe back to its detail', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to recipes' })).toBeInTheDocument();
+  });
+
+  it('cancels a new recipe back to the screen it was opened from', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+  });
+
   it('lets cooks mark ingredients as applied while reading a recipe', async () => {
     render(<App />);
 
-    const ingredient = await screen.findByRole('checkbox', { name: /Tortillas/i });
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open 2 Dollar Burrito/i }));
+    const ingredient = screen.getByRole('checkbox', { name: /Tortillas/i });
     expect(ingredient).not.toBeChecked();
     expect(screen.getByText(/0 of 45 applied/i)).toBeInTheDocument();
 
@@ -149,7 +220,9 @@ describe('Recipe Box app shell', () => {
   it('asks for confirmation before deleting a recipe', async () => {
     render(<App />);
 
-    await userEvent.click(await screen.findByRole('button', { name: /^Delete$/i }));
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open 2 Dollar Burrito/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
 
     expect(screen.getByRole('button', { name: /Confirm delete/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /2 Dollar Burrito but Cheaper/i })).toBeInTheDocument();

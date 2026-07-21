@@ -2,6 +2,7 @@ import {
   Archive,
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
   Cloud,
   CloudOff,
   Download,
@@ -18,7 +19,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
@@ -57,6 +58,7 @@ const BLANK_RECIPE: Recipe = {
 };
 
 type IngredientChecks = Record<string, number[]>;
+type AppView = 'collection' | 'detail' | 'editor' | 'settings';
 
 export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -67,13 +69,15 @@ export default function App() {
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [statusMessage, setStatusMessage] = useState('Getting the recipe drawer ready...');
-  const [activePanel, setActivePanel] = useState<'recipes' | 'settings'>('recipes');
+  const [view, setView] = useState<AppView>('collection');
+  const [editorReturnView, setEditorReturnView] = useState<'collection' | 'detail'>('collection');
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
   const [ingredientChecks, setIngredientChecks] = useState<IngredientChecks>(() => loadIngredientChecks());
   const [pendingDeleteId, setPendingDeleteId] = useState('');
+  const collectionScrollY = useRef<number | null>(null);
 
   useEffect(() => {
     void bootstrap();
@@ -82,6 +86,12 @@ export default function App() {
   useEffect(() => {
     saveIngredientChecks(ingredientChecks);
   }, [ingredientChecks]);
+
+  useEffect(() => {
+    if (view === 'collection' && collectionScrollY.current !== null && collectionScrollY.current > 0) {
+      window.scrollTo({ top: collectionScrollY.current });
+    }
+  }, [view]);
 
   const tags = useMemo(() => getAllTags(recipes), [recipes]);
   const filteredRecipes = useMemo(
@@ -189,6 +199,7 @@ export default function App() {
       setRecipes((current) => upsertRecipeList(current, saved));
       setSelectedId(saved.id);
       setEditingRecipe(null);
+      setView('detail');
       setSyncState(navigator.onLine ? 'success' : 'offline');
       setStatusMessage(navigator.onLine ? 'Saved and synced' : 'Saved offline');
     } catch (error) {
@@ -205,6 +216,7 @@ export default function App() {
     setLastDeleted(recipe);
     setRecipes((current) => current.filter((item) => item.id !== recipe.id));
     setSelectedId((current) => (current === recipe.id ? '' : current));
+    setView('collection');
     setStatusMessage(`${recipe.title} deleted. Undo is available.`);
 
     try {
@@ -270,6 +282,9 @@ export default function App() {
   }
 
   function startNewRecipe() {
+    if (view === 'collection') {
+      collectionScrollY.current = window.scrollY;
+    }
     const now = new Date().toISOString();
     setEditingRecipe({
       ...BLANK_RECIPE,
@@ -277,7 +292,8 @@ export default function App() {
       createdAt: now,
       updatedAt: now
     });
-    setActivePanel('recipes');
+    setEditorReturnView(view === 'detail' ? 'detail' : 'collection');
+    setView('editor');
   }
 
   async function importMarkdown(markdown: string) {
@@ -305,8 +321,13 @@ export default function App() {
         <div className="topbar-actions">
           <button
             type="button"
-            className={activePanel === 'settings' ? 'icon-button active' : 'icon-button'}
-            onClick={() => setActivePanel((panel) => (panel === 'settings' ? 'recipes' : 'settings'))}
+            className={view === 'settings' ? 'icon-button active' : 'icon-button'}
+            onClick={() => {
+              if (view === 'collection') {
+                collectionScrollY.current = window.scrollY;
+              }
+              setView('settings');
+            }}
             aria-label="Open household settings"
           >
             <Settings size={18} />
@@ -314,8 +335,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="workspace">
-        <aside className="recipe-rail" aria-label="Recipe browser">
+      <main className={`workspace app-view-${view}`} data-view={view}>
+        {view === 'collection' ? <aside className="recipe-rail" aria-label="Recipe browser">
           <div className="search-wrap">
             <Search size={18} aria-hidden="true" />
             <label className="sr-only" htmlFor="recipe-search">
@@ -335,15 +356,16 @@ export default function App() {
             recipes={filteredRecipes}
             selectedId={selectedRecipe?.id}
             onSelect={(recipe) => {
+              collectionScrollY.current = window.scrollY;
               setSelectedId(recipe.id);
               setEditingRecipe(null);
               setPendingDeleteId('');
-              setActivePanel('recipes');
+              setView('detail');
             }}
           />
-        </aside>
+        </aside> : null}
 
-        {activePanel === 'settings' ? (
+        {view === 'settings' ? (
           <SettingsPanel
             cookbook={cookbook}
             authEmail={authEmail}
@@ -363,21 +385,30 @@ export default function App() {
             onToggleTag={toggleTag}
             onToggleFavorites={() => setFavoritesOnly((value) => !value)}
             onSignOut={() => void signOut()}
+            onBack={() => setView('collection')}
           />
-        ) : editingRecipe ? (
+        ) : view === 'editor' && editingRecipe ? (
           <RecipeEditor
             recipe={editingRecipe}
-            onCancel={() => setEditingRecipe(null)}
+            onCancel={() => {
+              setEditingRecipe(null);
+              setView(editorReturnView);
+            }}
             onSave={(recipe) => {
               setPendingDeleteId('');
               void persistRecipe(recipe);
             }}
           />
-        ) : selectedRecipe ? (
+        ) : view === 'detail' && selectedRecipe ? (
           <RecipeDetail
             recipe={selectedRecipe}
+            onBack={() => setView('collection')}
             checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
-            onEdit={() => setEditingRecipe(selectedRecipe)}
+            onEdit={() => {
+              setEditingRecipe(selectedRecipe);
+              setEditorReturnView('detail');
+              setView('editor');
+            }}
             deleteNeedsConfirmation={pendingDeleteId === selectedRecipe.id}
             onDelete={() => requestDelete(selectedRecipe)}
             onCancelDelete={() => setPendingDeleteId('')}
@@ -385,9 +416,9 @@ export default function App() {
             onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
             onResetIngredients={() => resetIngredients(selectedRecipe.id)}
           />
-        ) : (
+        ) : view === 'detail' ? (
           <EmptyDetail onCreate={startNewRecipe} />
-        )}
+        ) : null}
       </main>
 
       {lastDeleted ? (
@@ -486,6 +517,7 @@ export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
 
 function RecipeDetail({
   recipe,
+  onBack,
   checkedIngredientIndexes,
   onEdit,
   onDelete,
@@ -496,6 +528,7 @@ function RecipeDetail({
   deleteNeedsConfirmation
 }: {
   recipe: Recipe;
+  onBack: () => void;
   checkedIngredientIndexes: number[];
   onEdit: () => void;
   onDelete: () => void;
@@ -510,6 +543,9 @@ function RecipeDetail({
 
   return (
     <article className="recipe-detail" id="recipe-detail">
+      <button type="button" className="text-button screen-back" onClick={onBack}>
+        <ChevronLeft size={18} /> Back to recipes
+      </button>
       <div className="detail-head">
         <div>
           <p className="eyebrow">{recipe.tags.slice(0, 3).join(' · ') || 'Recipe'}</p>
@@ -746,7 +782,7 @@ function RecipeEditor({
         </div>
         <div className="form-actions">
           <button type="button" className="button subtle" onClick={onCancel}>
-            Keep browsing
+            Cancel
           </button>
           <button type="submit" className="button primary">
             Save recipe
@@ -775,7 +811,8 @@ function SettingsPanel({
   onRefresh,
   onToggleTag,
   onToggleFavorites,
-  onSignOut
+  onSignOut,
+  onBack
 }: {
   cookbook: Cookbook | null;
   authEmail: string;
@@ -795,12 +832,16 @@ function SettingsPanel({
   onToggleTag: (tag: string) => void;
   onToggleFavorites: () => void;
   onSignOut: () => void;
+  onBack: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
   const cloudReady = hasSupabaseConfig;
 
   return (
     <section className="settings-surface" aria-labelledby="settings-heading">
+      <button type="button" className="text-button screen-back" onClick={onBack}>
+        <ChevronLeft size={18} /> Back to recipes
+      </button>
       <div className="detail-head">
         <div>
           <p className="eyebrow">Household settings</p>
