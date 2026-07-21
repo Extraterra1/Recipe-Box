@@ -29,6 +29,7 @@ Prep 10 min Cook 8 min Servings: 4
 `);
 
     expect(recipe.title).toBe('Pancakes');
+    expect(recipe.imageUrl).toBe('');
     expect(recipe.sourceLabel).toBe('Weekend Kitchen');
     expect(recipe.sourceUrl).toBe('https://example.test/pancakes');
     expect(recipe.metadata).toBe('Prep 10 min Cook 8 min Servings: 4');
@@ -46,6 +47,7 @@ describe('exportRecipesAsMarkdown', () => {
       {
         id: 'recipe-1',
         title: 'Pancakes',
+        imageUrl: '',
         sourceLabel: 'Weekend Kitchen',
         sourceUrl: 'https://example.test/pancakes',
         metadata: 'Servings: 4',

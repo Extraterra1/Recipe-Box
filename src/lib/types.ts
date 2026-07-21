@@ -2,6 +2,7 @@ export type Recipe = {
   id: string;
   cookbookId?: string;
   title: string;
+  imageUrl: string;
   sourceLabel: string;
   sourceUrl: string;
   metadata: string;

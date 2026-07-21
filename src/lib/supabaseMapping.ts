@@ -28,6 +28,7 @@ export function toRecipeInsert(recipe: Recipe, cookbookId: string): RecipeInsert
   return {
     cookbook_id: cookbookId,
     title: recipe.title,
+    image_url: recipe.imageUrl || null,
     source_label: recipe.sourceLabel || null,
     source_url: recipe.sourceUrl || null,
     metadata: recipe.metadata || null,
@@ -47,6 +48,7 @@ export function fromRecipeRow(row: RecipeRow): Recipe {
     id: row.id,
     cookbookId: row.cookbook_id,
     title: row.title,
+    imageUrl: row.image_url ?? '',
     sourceLabel: row.source_label ?? '',
     sourceUrl: row.source_url ?? '',
     metadata: row.metadata ?? '',

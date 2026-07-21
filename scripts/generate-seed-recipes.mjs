@@ -91,6 +91,7 @@ function parseMarkdown(markdown, fallbackId) {
   return {
     id: slugify(title),
     title,
+    imageUrl: '',
     sourceLabel,
     sourceUrl,
     metadata: metadata.join(' ').trim(),

@@ -41,6 +41,7 @@ const INGREDIENT_CHECKS_KEY = 'recipe-box-ingredient-checks';
 const BLANK_RECIPE: Recipe = {
   id: '',
   title: '',
+  imageUrl: '',
   sourceLabel: '',
   sourceUrl: '',
   metadata: '',

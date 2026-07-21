@@ -8,6 +8,7 @@ describe('Supabase recipe mapping', () => {
       id: 'local-1',
       cookbookId: 'cookbook-1',
       title: 'Ciabatta',
+      imageUrl: 'https://example.test/ciabatta.jpg',
       sourceLabel: 'Kitchen Notes',
       sourceUrl: 'https://example.test/ciabatta',
       metadata: 'Makes 2 loaves',
@@ -26,6 +27,7 @@ describe('Supabase recipe mapping', () => {
     expect(insert).toMatchObject({
       cookbook_id: 'cookbook-1',
       title: 'Ciabatta',
+      image_url: 'https://example.test/ciabatta.jpg',
       ingredients: ['500g flour', '400g water'],
       directions: ['Mix.', 'Bake.'],
       favorite: true
@@ -35,6 +37,7 @@ describe('Supabase recipe mapping', () => {
       id: 'remote-1',
       cookbookId: 'cookbook-1',
       title: 'Ciabatta',
+      imageUrl: 'https://example.test/ciabatta.jpg',
       ingredients: ['500g flour', '400g water'],
       favorite: true
     });

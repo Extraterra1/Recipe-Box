@@ -4,6 +4,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "2-dollar-burrito-but-cheaper",
     "title": "2 Dollar Burrito but Cheaper",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/2-dollar-burrito-but-cheaper",
     "metadata": "Servings: Serving size: 4-6",
@@ -108,6 +109,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "baguette",
     "title": "Baguette",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -135,6 +137,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "best-homemade-cinnamon-rolls",
     "title": "Best Homemade Cinnamon Rolls",
+    "imageUrl": "",
     "sourceLabel": "Joyfoodsunshine.com",
     "sourceUrl": "https://joyfoodsunshine.com/cinnamon-rolls-recipe/#wprm-recipe-container-13774",
     "metadata": "Prep Time: 20 minutes Cook Time: 20 minutes Servings: Servings 12",
@@ -219,6 +222,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "birthday-cake",
     "title": "Birthday Cake",
+    "imageUrl": "",
     "sourceLabel": "M.youtube.com",
     "sourceUrl": "https://m.youtube.com/watch?v=37W5lEYUX_U",
     "metadata": "",
@@ -259,6 +263,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "breakfast-fruit-smoothie",
     "title": "Breakfast Fruit Smoothie",
+    "imageUrl": "",
     "sourceLabel": "Eatthismuch.com",
     "sourceUrl": "https://www.eatthismuch.com/recipe/nutrition/breakfast-fruit-smoothie,34670/",
     "metadata": "",
@@ -290,6 +295,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "burger-buns-v2",
     "title": "Burger Buns V2",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -330,6 +336,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "burger-buns",
     "title": "Burger Buns",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/burger-buns",
     "metadata": "",
@@ -378,6 +385,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "chick-fil-a-chicken-sandwich-but-better",
     "title": "Chick-Fil-A Chicken Sandwich but Better",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/chick-fil-a-chicken-sandwich-but-better",
     "metadata": "",
@@ -444,6 +452,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "chocolate-babka-chocolate-brioche-bread",
     "title": "Chocolate Babka (Chocolate Brioche Bread)",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/chocolate-babka-chocolate-brioche-bread",
     "metadata": "",
@@ -500,6 +509,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "ciabatta",
     "title": "Ciabatta",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -545,6 +555,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "cinnamon-roll-bread",
     "title": "Cinnamon Roll Bread",
+    "imageUrl": "",
     "sourceLabel": "Julieblanner.com",
     "sourceUrl": "https://julieblanner.com/cinnamon-roll-bread-recipe/",
     "metadata": "Prep Time: 10 mins Cook Time: 50 mins Servings: 12",
@@ -610,6 +621,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "classic-banana-bread",
     "title": "Classic Banana Bread",
+    "imageUrl": "",
     "sourceLabel": "M.youtube.com",
     "sourceUrl": "https://m.youtube.com/watch?v=2RoUoMnDHlc",
     "metadata": "",
@@ -646,6 +658,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "corn-dogs",
     "title": "Corn Dogs",
+    "imageUrl": "",
     "sourceLabel": "Basicswithbabish.co",
     "sourceUrl": "https://basicswithbabish.co/basicsepisodes/corn-dogs",
     "metadata": "Servings: Serves: 5-6",
@@ -691,6 +704,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "delivery-pizza",
     "title": "Delivery Pizza",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -717,6 +731,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "ez-pizza-dough",
     "title": "EZ Pizza Dough",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -753,6 +768,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "fluffy-condensed-milk-bread",
     "title": "Fluffy Condensed Milk Bread",
+    "imageUrl": "",
     "sourceLabel": "Video.cookist.com",
     "sourceUrl": "https://video.cookist.com/video/an/X6UlUuSwGKM7E7vf",
     "metadata": "",
@@ -795,6 +811,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "giant-homemade-pizza-for-6-dollars-but-cheaper",
     "title": "Giant Homemade Pizza for 6 Dollars | but Cheaper",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/recipes/cheap-giant-pizza-recipe#recipe",
     "metadata": "Prep Time: overnight - 72 hr Cook Time: 30 min Servings: 1 people",
@@ -847,6 +864,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "homemade-calzones",
     "title": "Homemade Calzones",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/homemade-calzones",
     "metadata": "",
@@ -910,6 +928,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "homemade-corn-dogs",
     "title": "Homemade Corn Dogs",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/homemade-corn-dogs",
     "metadata": "Servings: Serving size: 4-6",
@@ -980,6 +999,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "homemade-gyros",
     "title": "Homemade Gyros",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/homemade-gyros",
     "metadata": "Servings: Serves: 6-8",
@@ -1057,6 +1077,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "honey-garlic-chicken-breast",
     "title": "Honey Garlic Chicken Breast",
+    "imageUrl": "",
     "sourceLabel": "Recipetineats.com",
     "sourceUrl": "https://www.recipetineats.com/honey-garlic-chicken/",
     "metadata": "Servings: Servings 4",
@@ -1095,6 +1116,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "joshua-loaf",
     "title": "Joshua Loaf",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1132,6 +1154,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "lagerstrom-cinnamon-rolls",
     "title": "Lagerstrom Cinnamon Rolls",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1186,6 +1209,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "levian-chocolate-chip-cookies",
     "title": "Levian Chocolate Chip Cookies",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/levian-chocolate-chip-cookies",
     "metadata": "",
@@ -1229,6 +1253,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "nyc-pizza",
     "title": "NYC Pizza",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1269,6 +1294,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "new-york-style-bagels",
     "title": "New York Style Bagels",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/new-york-style-bagels",
     "metadata": "",
@@ -1321,6 +1347,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "oatmeal-smoothie",
     "title": "Oatmeal Smoothie",
+    "imageUrl": "",
     "sourceLabel": "Wellplated.com",
     "sourceUrl": "https://www.wellplated.com/oatmeal-smoothie-recipe/",
     "metadata": "Prep Time: 5 mins Cook Time: 5 mins Servings: Servings: 1 smoothie",
@@ -1369,6 +1396,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "pancakes-2",
     "title": "Pancakes 2",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1399,6 +1427,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "pancakes",
     "title": "Pancakes",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1437,6 +1466,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "pigs-in-a-blanket",
     "title": "Pigs in a Blanket",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/pigs-in-a-blanket",
     "metadata": "",
@@ -1474,6 +1504,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "pizza-hut-and-dominos-pizza-but-better",
     "title": "Pizza Hut and Dominos Pizza (But Better)",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/pizza-hut-and-dominos-pizza-but-better",
     "metadata": "",
@@ -1540,6 +1571,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "ragusea-brownies",
     "title": "Ragusea Brownies",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1573,6 +1605,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "rustic-bread",
     "title": "Rustic Bread",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1606,6 +1639,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "snickerdoodle-cookies",
     "title": "Snickerdoodle Cookies",
+    "imageUrl": "",
     "sourceLabel": "Preppykitchen.com",
     "sourceUrl": "https://preppykitchen.com/snickerdoodle-cookies-recipe/",
     "metadata": "Prep Time: 10 minutes Cook Time: 10 minutes Servings: Servings 30",
@@ -1655,6 +1689,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "the-easiest-actually-good-bread-1-dough-3-loaves",
     "title": "The Easiest Actually Good Bread (1 Dough 3 Loaves)",
+    "imageUrl": "",
     "sourceLabel": "Brianlagerstrom.com",
     "sourceUrl": "https://www.brianlagerstrom.com/recipes/1-dough-3-loaves-2",
     "metadata": "",
@@ -1713,6 +1748,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "tres-leches",
     "title": "Tres Leches",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1755,6 +1791,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "vanilla-cake",
     "title": "Vanilla Cake",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1783,6 +1820,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "whataburger-honey-butter-chicken-sandwich-but-better",
     "title": "Whataburger Honey Butter Chicken Sandwich (But Better)",
+    "imageUrl": "",
     "sourceLabel": "Joshuaweissman.com",
     "sourceUrl": "https://www.joshuaweissman.com/post/whataburger-honey-butter-chicken-sandwich-but-better",
     "metadata": "",
@@ -1855,6 +1893,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "zhou-brownies",
     "title": "Zhou Brownies",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",
@@ -1906,6 +1945,7 @@ export const seedRecipes: Recipe[] = [
   {
     "id": "zhou-cookies",
     "title": "Zhou Cookies",
+    "imageUrl": "",
     "sourceLabel": "",
     "sourceUrl": "",
     "metadata": "",

@@ -69,6 +69,7 @@ export function parseRecipeMarkdown(markdown: string, fallbackId?: string): Reci
   return {
     id: fallbackId || slugify(title),
     title,
+    imageUrl: '',
     sourceLabel,
     sourceUrl,
     metadata: metadata.join(' ').trim(),
