@@ -247,7 +247,6 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     font-size: 14px;
     font-weight: 550;
     text-align: left;
-    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out);
   }
 
   .library-tags .library-navigation-row { grid-template-columns: minmax(0, 1fr) auto; }
@@ -323,7 +322,6 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     margin: 0 -7px;
     padding: 10px 7px;
     border-radius: 7px;
-    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
   }
 
   .recipe-row:active { opacity: 1; transform: none; }
@@ -394,6 +392,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 
 @media (max-width: 759px) {
   .app-view-detail .wide-collection-context { display: none; }
+  .recipe-rail[data-mobile-state="inactive"] { display: none; }
   .desktop-preview-pane[data-mobile-state="inactive"] { display: none; }
   .detail-actions, .form-actions, .button-row { align-items: stretch; }
   .detail-actions .button, .form-actions .button, .button-row .button { flex: 1; }
