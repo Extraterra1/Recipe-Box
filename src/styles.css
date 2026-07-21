@@ -190,6 +190,12 @@ h3 {
   margin: 0 auto;
 }
 
+.app-view-collection,
+.app-view-editor,
+.app-view-settings {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .recipe-rail,
 .recipe-detail,
 .editor-surface,
@@ -785,6 +791,10 @@ textarea:disabled {
 
   .recipe-list {
     max-height: 42vh;
+  }
+
+  .app-view-detail .wide-collection-context {
+    display: none;
   }
 }
 

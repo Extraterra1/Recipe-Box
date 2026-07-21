@@ -71,6 +71,7 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState('Getting the recipe drawer ready...');
   const [view, setView] = useState<AppView>('collection');
   const [editorReturnView, setEditorReturnView] = useState<'collection' | 'detail'>('collection');
+  const [settingsReturnView, setSettingsReturnView] = useState<Exclude<AppView, 'settings'>>('collection');
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -326,6 +327,9 @@ export default function App() {
               if (view === 'collection') {
                 collectionScrollY.current = window.scrollY;
               }
+              if (view !== 'settings') {
+                setSettingsReturnView(view);
+              }
               setView('settings');
             }}
             aria-label="Open household settings"
@@ -336,7 +340,11 @@ export default function App() {
       </header>
 
       <main className={`workspace app-view-${view}`} data-view={view}>
-        {view === 'collection' ? <aside className="recipe-rail" aria-label="Recipe browser">
+        {view === 'collection' || view === 'detail' ? <aside
+          className={view === 'detail' ? 'recipe-rail wide-collection-context' : 'recipe-rail active-surface'}
+          aria-label="Recipe browser"
+          data-mobile-state={view === 'detail' ? 'inactive' : 'active'}
+        >
           <div className="search-wrap">
             <Search size={18} aria-hidden="true" />
             <label className="sr-only" htmlFor="recipe-search">
@@ -356,7 +364,9 @@ export default function App() {
             recipes={filteredRecipes}
             selectedId={selectedRecipe?.id}
             onSelect={(recipe) => {
-              collectionScrollY.current = window.scrollY;
+              if (view === 'collection') {
+                collectionScrollY.current = window.scrollY;
+              }
               setSelectedId(recipe.id);
               setEditingRecipe(null);
               setPendingDeleteId('');
@@ -385,10 +395,13 @@ export default function App() {
             onToggleTag={toggleTag}
             onToggleFavorites={() => setFavoritesOnly((value) => !value)}
             onSignOut={() => void signOut()}
-            onBack={() => setView('collection')}
+            backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
+            onBack={() => setView(settingsReturnView)}
           />
-        ) : view === 'editor' && editingRecipe ? (
+        ) : null}
+        {(view === 'editor' || (view === 'settings' && settingsReturnView === 'editor')) && editingRecipe ? (
           <RecipeEditor
+            inactive={view !== 'editor'}
             recipe={editingRecipe}
             onCancel={() => {
               setEditingRecipe(null);
@@ -399,7 +412,8 @@ export default function App() {
               void persistRecipe(recipe);
             }}
           />
-        ) : view === 'detail' && selectedRecipe ? (
+        ) : null}
+        {view === 'detail' && selectedRecipe ? (
           <RecipeDetail
             recipe={selectedRecipe}
             onBack={() => setView('collection')}
@@ -542,7 +556,7 @@ function RecipeDetail({
   const appliedCount = recipe.ingredients.filter((_, index) => checkedIngredients.has(index)).length;
 
   return (
-    <article className="recipe-detail" id="recipe-detail">
+    <article className="recipe-detail active-surface" id="recipe-detail">
       <button type="button" className="text-button screen-back" onClick={onBack}>
         <ChevronLeft size={18} /> Back to recipes
       </button>
@@ -669,10 +683,12 @@ function RecipeDetail({
 
 function RecipeEditor({
   recipe,
+  inactive,
   onCancel,
   onSave
 }: {
   recipe: Recipe;
+  inactive: boolean;
   onCancel: () => void;
   onSave: (recipe: Recipe) => void;
 }) {
@@ -703,7 +719,7 @@ function RecipeEditor({
   }
 
   return (
-    <section className="editor-surface" aria-labelledby="editor-heading">
+    <section className="editor-surface active-surface" aria-labelledby="editor-heading" hidden={inactive}>
       <div className="detail-head">
         <div>
           <p className="eyebrow">Recipe editor</p>
@@ -812,6 +828,7 @@ function SettingsPanel({
   onToggleTag,
   onToggleFavorites,
   onSignOut,
+  backLabel,
   onBack
 }: {
   cookbook: Cookbook | null;
@@ -832,6 +849,7 @@ function SettingsPanel({
   onToggleTag: (tag: string) => void;
   onToggleFavorites: () => void;
   onSignOut: () => void;
+  backLabel: string;
   onBack: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
@@ -840,7 +858,7 @@ function SettingsPanel({
   return (
     <section className="settings-surface" aria-labelledby="settings-heading">
       <button type="button" className="text-button screen-back" onClick={onBack}>
-        <ChevronLeft size={18} /> Back to recipes
+        <ChevronLeft size={18} /> {backLabel}
       </button>
       <div className="detail-head">
         <div>

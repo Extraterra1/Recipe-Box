@@ -122,7 +122,7 @@ describe('Recipe Box app shell', () => {
   });
 
   it('returns from detail without clearing the active search', async () => {
-    render(<App />);
+    const { container } = render(<App />);
 
     const list = await screen.findByRole('list', { name: 'Recipes' });
     const search = screen.getByRole('searchbox', { name: 'Search recipes' });
@@ -131,10 +131,38 @@ describe('Recipe Box app shell', () => {
     await userEvent.type(search, 'pizza');
     await userEvent.click(within(list).getByRole('button', { name: /Open NYC Pizza/i }));
 
-    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
+    const detailWorkspace = container.querySelector('.workspace[data-view="detail"]');
+    expect(detailWorkspace?.querySelector('.recipe-rail.wide-collection-context')).toBeInTheDocument();
+    expect(detailWorkspace?.querySelector('.recipe-detail.active-surface')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
     expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toHaveValue('pizza');
+    expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
+  });
+
+  it('returns from settings to recipe detail', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipe' }));
+
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+  });
+
+  it('returns from settings to an intact editor draft', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    const title = screen.getByRole('textbox', { name: 'Title' });
+    await userEvent.type(title, 'Summer pasta');
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to editor' }));
+
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Summer pasta');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
   });
 
@@ -152,12 +180,28 @@ describe('Recipe Box app shell', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
 
+  it('does not replace collection scroll context when selecting in the wide rail', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 420 });
+    render(<App />);
+
+    let list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 900 });
+    list = screen.getByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Birthday Cake/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 420 });
+    scrollTo.mockRestore();
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+  });
+
   it('gives settings and the editor explicit return actions', async () => {
     render(<App />);
 
     await screen.findByRole('list', { name: 'Recipes' });
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
-    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
     await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
