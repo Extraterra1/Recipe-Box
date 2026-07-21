@@ -102,7 +102,23 @@ Loading uses rows with stable text and thumbnail geometry. No centered spinner t
 
 The mobile layout is canonical from 320px upward. Content uses 16px horizontal insets, safe-area padding, and no outer card shell.
 
-On wider screens, preserve the title-led index rather than transforming it automatically into a photo grid. The index may sit in a bounded left column while recipe detail appears beside it when space genuinely supports two panes. Desktop is an adaptation of the mobile information architecture.
+On wider screens, preserve the title-led index rather than transforming it into a photo grid. Desktop becomes a cookbook-management workspace called **Cookbook Library**, not a centered or enlarged mobile screen.
+
+### Desktop Cookbook Library
+
+At 1180px and above, use three functional regions:
+
+1. **Library navigation**, 216–240px: product identity, All Recipes, Favorites, tag navigation, Import/Export, and Settings.
+2. **Recipe index**, 360–420px: search, result count and sort control, then a dense title-led list.
+3. **Read-only preview**, flexible with a comfortable maximum reading width: recipe title and actions, metadata and source, ingredients, directions, notes, and nutrition.
+
+The navigation and recipe index remain visible while the preview changes. The preview opens in read mode. Editing replaces the preview pane rather than opening a modal or making every field permanently editable.
+
+Desktop recipe rows may show title, small thumbnail or placeholder, source, and modified date. Favorites and tags are browsing tools in the persistent navigation, not chips above the index. Row actions appear through selection or restrained hover affordances, never as a permanent cluster on every row.
+
+The desktop header is integrated into the library navigation. Do not center the logo over the entire application, strand add/settings controls at viewport edges, or leave a narrow mobile column floating in empty space.
+
+From 760px to 1179px, retain the existing two-pane tablet behavior. Below 760px, retain the dedicated single-surface mobile flow.
 
 ## 9. Motion
 
