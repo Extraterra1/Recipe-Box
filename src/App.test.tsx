@@ -115,6 +115,42 @@ describe('Recipe Box app shell', () => {
     expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'collection');
   });
 
+  it('returns a saved collection-preview edit to collection with the saved data visible', async () => {
+    const { container } = render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    const title = screen.getByRole('textbox', { name: 'Title' });
+    await userEvent.clear(title);
+    await userEvent.type(title, '2 Dollar Burrito Updated');
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+
+    await waitFor(() => {
+      expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'collection');
+    });
+    expect(screen.getByRole('heading', { name: '2 Dollar Burrito Updated' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Title' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Title' }), '2 Dollar Burrito but Cheaper');
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+    await screen.findByRole('heading', { name: '2 Dollar Burrito but Cheaper' });
+  });
+
+  it('returns a saved detail-origin edit to detail', async () => {
+    const { container } = render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+
+    await waitFor(() => {
+      expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'detail');
+    });
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+  });
+
   it('replaces preview with editor or settings while navigation and index remain co-mounted', async () => {
     render(<App />);
 

@@ -534,7 +534,7 @@ export default function App() {
               }}
               onSave={(recipe) => {
                 setPendingDeleteId('');
-                void persistRecipe(recipe);
+                void persistRecipe(recipe, editorReturnView);
               }}
             />
           ) : null}
