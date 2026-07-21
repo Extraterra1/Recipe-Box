@@ -65,6 +65,9 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .recipe-row { display: grid; width: 100%; min-height: 80px; grid-template-columns: minmax(0, 1fr) 56px; align-items: center; gap: 16px; padding: 12px 0; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out); }
 .recipe-row:active { opacity: .62; transform: scale(.995); }
 .recipe-row.selected { color: var(--accent); }
+.recipe-row-skeleton { pointer-events: none; }
+.recipe-title-skeleton { width: min(58%, 220px); height: 17px; border-radius: 5px; background: var(--search-surface); }
+.recipe-thumbnail-skeleton { width: 56px; height: 56px; border-radius: 10px; background: var(--placeholder-surface); }
 .recipe-title { display: -webkit-box; overflow: hidden; font-size: 17px; font-weight: 600; line-height: 1.28; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .recipe-thumbnail { display: block; width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
 .recipe-thumbnail.placeholder { display: grid; place-items: center; background: var(--placeholder-surface); color: var(--placeholder-icon); }

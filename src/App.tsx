@@ -66,6 +66,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
   const [statusMessage, setStatusMessage] = useState('Getting the recipe drawer ready...');
@@ -150,6 +151,8 @@ export default function App() {
       setSelectedId(seedRecipes[0]?.id ?? '');
       setSyncState('error');
       setStatusMessage(getErrorMessage(error));
+    } finally {
+      setIsBootstrapping(false);
     }
   }
 
@@ -329,9 +332,11 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <a href="#recipe-detail" className="skip-link">
-        Skip to recipe
-      </a>
+      {view === 'detail' && selectedRecipe ? (
+        <a href="#recipe-detail" className="skip-link">
+          Skip to recipe
+        </a>
+      ) : null}
       <header className="topbar">
         <div className="topbar-actions topbar-actions-leading">
           <button type="button" className="icon-button" onClick={startNewRecipe} aria-label="Add recipe">
@@ -386,7 +391,10 @@ export default function App() {
           <RecipeList
             listRef={recipeListRef}
             recipes={filteredRecipes}
+            totalRecipeCount={recipes.length}
+            isLoading={isBootstrapping}
             selectedId={selectedRecipe?.id}
+            onCreate={startNewRecipe}
             onSelect={(recipe) => {
               if (view === 'collection') {
                 rememberCollectionScroll();
@@ -484,21 +492,53 @@ function SyncBadge({ state, message }: { state: SyncState; message: string }) {
   );
 }
 
-function RecipeList({
+export function RecipeList({
   listRef,
   recipes,
+  totalRecipeCount,
+  isLoading,
   selectedId,
+  onCreate,
   onSelect
 }: {
   listRef: RefObject<HTMLUListElement | null>;
   recipes: Recipe[];
+  totalRecipeCount: number;
+  isLoading: boolean;
   selectedId?: string;
+  onCreate: () => void;
   onSelect: (recipe: Recipe) => void;
 }) {
+  if (isLoading) {
+    return (
+      <ul ref={listRef} className="recipe-list" aria-label="Loading recipes" aria-busy="true">
+        {[0, 1, 2].map((index) => (
+          <li key={index} data-testid="recipe-row-skeleton" aria-hidden="true">
+            <div className="recipe-row recipe-row-skeleton">
+              <span className="recipe-title-skeleton" />
+              <span className="recipe-thumbnail recipe-thumbnail-skeleton" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   if (!recipes.length) {
+    if (totalRecipeCount === 0) {
+      return (
+        <div className="empty-list">
+          <p>No recipes saved yet.</p>
+          <button type="button" className="button primary" onClick={onCreate}>
+            <Plus size={17} /> Create recipe
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className="empty-list">
-        <p>No recipes match that search.</p>
+        <p>No recipes match your search or filters.</p>
       </div>
     );
   }

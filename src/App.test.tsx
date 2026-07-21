@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import App, { RecipeThumbnail } from './App';
+import App, { RecipeList, RecipeThumbnail } from './App';
 import type { Recipe } from './lib/types';
 
 const imageRecipe: Recipe = {
@@ -22,12 +23,66 @@ const imageRecipe: Recipe = {
 };
 
 describe('Recipe Box app shell', () => {
+  it('shows stable recipe-row skeletons while the collection is loading', () => {
+    render(
+      <RecipeList
+        listRef={createRef<HTMLUListElement>()}
+        recipes={[]}
+        totalRecipeCount={0}
+        isLoading
+        onCreate={vi.fn()}
+        onSelect={vi.fn()}
+      />
+    );
+
+    const list = screen.getByRole('list', { name: 'Loading recipes' });
+    expect(list).toHaveAttribute('aria-busy', 'true');
+    expect(within(list).getAllByTestId('recipe-row-skeleton')).toHaveLength(3);
+    expect(screen.queryByText(/No recipes match/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No recipes saved/i)).not.toBeInTheDocument();
+  });
+
+  it('offers a direct create action for a genuinely empty loaded collection', async () => {
+    const onCreate = vi.fn();
+    render(
+      <RecipeList
+        listRef={createRef<HTMLUListElement>()}
+        recipes={[]}
+        totalRecipeCount={0}
+        isLoading={false}
+        onCreate={onCreate}
+        onSelect={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('No recipes saved yet.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Create recipe' }));
+    expect(onCreate).toHaveBeenCalledOnce();
+  });
+
+  it('shows concise no-results copy when filters hide a nonempty collection', () => {
+    render(
+      <RecipeList
+        listRef={createRef<HTMLUListElement>()}
+        recipes={[]}
+        totalRecipeCount={1}
+        isLoading={false}
+        onCreate={vi.fn()}
+        onSelect={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('No recipes match your search or filters.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create recipe' })).not.toBeInTheDocument();
+  });
+
   it('shows identity, search, and an alphabetical title-led recipe list', async () => {
     render(<App />);
 
     const heading = await screen.findByRole('heading', { name: 'Recipe Box' });
     const search = screen.getByRole('searchbox', { name: 'Search recipes' });
     const list = await screen.findByRole('list', { name: 'Recipes' });
+    expect(screen.queryByRole('link', { name: 'Skip to recipe' })).not.toBeInTheDocument();
 
     expect(heading.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(search.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -100,7 +155,8 @@ describe('Recipe Box app shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Favorites' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
-    expect(screen.getByText('No recipes match that search.')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toBeInTheDocument();
+    expect(screen.getByText('No recipes match your search or filters.')).toBeInTheDocument();
   });
 
   it('shows seeded recipes, searches them, and opens a readable detail pane', async () => {
@@ -117,6 +173,7 @@ describe('Recipe Box app shell', () => {
 
     await userEvent.click(within(list).getByRole('button', { name: /Open NYC Pizza/i }));
 
+    expect(screen.getByRole('link', { name: 'Skip to recipe' })).toHaveAttribute('href', '#recipe-detail');
     expect(screen.getByRole('heading', { name: /NYC Pizza/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Ingredients/i })).toBeInTheDocument();
   });
@@ -326,7 +383,7 @@ describe('Recipe Box app shell', () => {
   it('explains when a recipe has no directions yet', async () => {
     render(<App />);
 
-    const list = await screen.findByRole('list', { name: /Recipes/i });
+    const list = await screen.findByRole('list', { name: 'Recipes' });
     await userEvent.click(within(list).getByRole('button', { name: /Open Birthday Cake/i }));
 
     expect(screen.getByText(/No directions saved yet/i)).toBeInTheDocument();
