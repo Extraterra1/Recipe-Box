@@ -567,7 +567,6 @@ function RecipeDetail({
       </button>
       <div className="detail-head">
         <div>
-          <p className="eyebrow">{recipe.tags.slice(0, 3).join(' · ') || 'Recipe'}</p>
           <h2>{recipe.title}</h2>
           {recipe.metadata ? <p className="detail-meta">{recipe.metadata}</p> : null}
         </div>
@@ -727,7 +726,6 @@ function RecipeEditor({
     <section className="editor-surface active-surface" aria-labelledby="editor-heading" hidden={inactive}>
       <div className="detail-head">
         <div>
-          <p className="eyebrow">Recipe editor</p>
           <h2 id="editor-heading">{recipe.title ? `Edit ${recipe.title}` : 'Create recipe'}</h2>
         </div>
       </div>
@@ -867,7 +865,6 @@ function SettingsPanel({
       </button>
       <div className="detail-head">
         <div>
-          <p className="eyebrow">Household settings</p>
           <h2 id="settings-heading">{cookbook?.name ?? 'Recipe Box'}</h2>
         </div>
         <Home className="settings-home" size={28} aria-hidden="true" />
