@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import App, { RecipeList, RecipeThumbnail } from './App';
+import App, { RecipeList, RecipeThumbnail, sortRecipes } from './App';
 import type { Recipe } from './lib/types';
 
 const imageRecipe: Recipe = {
@@ -23,6 +23,83 @@ const imageRecipe: Recipe = {
 };
 
 describe('Recipe Box app shell', () => {
+  it('exposes library, index, and preview as persistent desktop workspace regions', async () => {
+    const { container } = render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    expect(screen.getByRole('navigation', { name: 'Library navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe preview' })).toBeInTheDocument();
+    expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'collection');
+  });
+
+  it('shows a result count and sorts recipes without mutating the source list', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    expect(screen.getByText(/\d+ recipes$/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Sort recipes' })).toHaveValue('alphabetical');
+    expect(within(list).getAllByRole('button')[0]).toHaveAccessibleName(/Open 2 Dollar Burrito/i);
+
+    const source = [
+      { ...imageRecipe, id: 'older', title: 'Alpha', updatedAt: '2025-01-01T00:00:00.000Z' },
+      { ...imageRecipe, id: 'newer', title: 'Zulu', updatedAt: '2026-01-01T00:00:00.000Z' }
+    ];
+    expect(sortRecipes(source, 'recent').map((recipe) => recipe.title)).toEqual(['Zulu', 'Alpha']);
+    expect(source.map((recipe) => recipe.title)).toEqual(['Alpha', 'Zulu']);
+  });
+
+  it('renders desktop source and modified metadata in each recipe row', () => {
+    render(
+      <RecipeList
+        listRef={createRef<HTMLUListElement>()}
+        recipes={[{ ...imageRecipe, sourceLabel: 'Family notebook', updatedAt: '2026-05-14T00:00:00.000Z' }]}
+        totalRecipeCount={1}
+        isLoading={false}
+        onCreate={vi.fn()}
+        onSelect={vi.fn()}
+      />
+    );
+
+    const row = screen.getByRole('button', { name: /Open Photo Recipe/i });
+    expect(within(row).getByText('Family notebook')).toBeInTheDocument();
+    expect(within(row).getByText(/Modified May 14, 2026/i)).toBeInTheDocument();
+    expect(within(row).getByText('Family notebook').closest('.recipe-row-metadata')).toHaveClass('desktop-only');
+  });
+
+  it('updates the read-only preview while keeping navigation and index mounted', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    const index = screen.getByRole('region', { name: 'Recipe index' });
+    await userEvent.click(within(index).getByRole('button', { name: /Open Baguette/i }));
+
+    const preview = screen.getByRole('region', { name: 'Recipe preview' });
+    expect(within(preview).getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Library navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+  });
+
+  it('replaces preview with editor or settings while navigation and index remain co-mounted', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    const index = screen.getByRole('region', { name: 'Recipe index' });
+    await userEvent.click(within(index).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    expect(screen.getByRole('navigation', { name: 'Library navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe preview' })).toHaveAttribute('data-pane-content', 'editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Recipe preview' })).toHaveAttribute('data-pane-content', 'settings');
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipe' }));
+    expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
+  });
   it('provides persistent library navigation with recipe, favorite, tag, and management destinations', async () => {
     render(<App />);
 

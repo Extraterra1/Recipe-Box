@@ -59,6 +59,19 @@ const BLANK_RECIPE: Recipe = {
 
 type IngredientChecks = Record<string, number[]>;
 type AppView = 'collection' | 'detail' | 'editor' | 'settings';
+export type RecipeSort = 'alphabetical' | 'recent';
+
+export function sortRecipes(recipes: Recipe[], sort: RecipeSort) {
+  return [...recipes].sort((a, b) => {
+    if (sort === 'recent') {
+      const dateDifference = Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+      if (dateDifference) {
+        return dateDifference;
+      }
+    }
+    return a.title.localeCompare(b.title);
+  });
+}
 
 function createLocalRecipeId() {
   const id = globalThis.crypto?.randomUUID?.()
@@ -72,6 +85,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [recipeSort, setRecipeSort] = useState<RecipeSort>('alphabetical');
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');
@@ -118,8 +132,8 @@ export default function App() {
     [recipes, tags]
   );
   const filteredRecipes = useMemo(
-    () => filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }).sort((a, b) => a.title.localeCompare(b.title)),
-    [favoritesOnly, query, recipes, selectedTags]
+    () => sortRecipes(filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }), recipeSort),
+    [favoritesOnly, query, recipeSort, recipes, selectedTags]
   );
   const selectedRecipe = recipes.find((recipe) => recipe.id === selectedId) ?? filteredRecipes[0] ?? recipes[0];
 
@@ -396,7 +410,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className={`workspace app-view-${view}`} data-view={view}>
+      <main className={`workspace desktop-workspace app-view-${view}`} data-view={view} data-mobile-view={view}>
         <LibraryNavigation
           recipeCount={recipes.length}
           favoriteCount={favoriteCount}
@@ -418,11 +432,12 @@ export default function App() {
           onImportExport={() => openSettings('data')}
           onSettings={() => openSettings()}
         />
-        {view === 'collection' || view === 'detail' ? <aside
+        <aside
           id="recipe-index"
-          className={view === 'detail' ? 'recipe-rail wide-collection-context' : 'recipe-rail active-surface'}
-          aria-label="Recipe browser"
-          data-mobile-state={view === 'detail' ? 'inactive' : 'active'}
+          className={view === 'collection' ? 'recipe-rail active-surface' : 'recipe-rail wide-collection-context'}
+          aria-label="Recipe index"
+          role="region"
+          data-mobile-state={view === 'collection' ? 'active' : 'inactive'}
         >
           <div className="search-wrap">
             <Search size={18} aria-hidden="true" />
@@ -437,6 +452,21 @@ export default function App() {
               placeholder="Search recipes"
               autoComplete="off"
             />
+          </div>
+
+          <div className="recipe-index-utility">
+            <p>{filteredRecipes.length} {filteredRecipes.length === 1 ? 'recipe' : 'recipes'}</p>
+            <label>
+              <span className="sr-only">Sort recipes</span>
+              <select
+                aria-label="Sort recipes"
+                value={recipeSort}
+                onChange={(event) => setRecipeSort(event.target.value as RecipeSort)}
+              >
+                <option value="alphabetical">Alphabetical</option>
+                <option value="recent">Recently modified</option>
+              </select>
+            </label>
           </div>
 
           <RecipeList
@@ -456,67 +486,76 @@ export default function App() {
               setView('detail');
             }}
           />
-        </aside> : null}
+        </aside>
 
-        {view === 'settings' ? (
-          <SettingsPanel
-            cookbook={cookbook}
-            authEmail={authEmail}
-            inviteCode={inviteCode}
-            recipes={recipes}
-            syncState={syncState}
-            statusMessage={statusMessage}
-            tags={tags}
-            selectedTags={selectedTags}
-            favoritesOnly={favoritesOnly}
-            initialSection={settingsTarget}
-            onAuthEmailChange={setAuthEmail}
-            onInviteCodeChange={setInviteCode}
-            onMagicLink={submitMagicLink}
-            onInvite={submitInvite}
-            onImportMarkdown={(value) => void importMarkdown(value)}
-            onRefresh={() => void refreshRecipes()}
-            onToggleTag={toggleTag}
-            onToggleFavorites={() => setFavoritesOnly((value) => !value)}
-            onSignOut={() => void signOut()}
-            backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
-            onBack={() => setView(settingsReturnView)}
-          />
-        ) : null}
-        {(view === 'editor' || (view === 'settings' && settingsReturnView === 'editor')) && editingRecipe ? (
-          <RecipeEditor
-            inactive={view !== 'editor'}
-            recipe={editingRecipe}
-            onCancel={() => {
-              setEditingRecipe(null);
-              setView(editorReturnView);
-            }}
-            onSave={(recipe) => {
-              setPendingDeleteId('');
-              void persistRecipe(recipe);
-            }}
-          />
-        ) : null}
-        {view === 'detail' && selectedRecipe ? (
-          <RecipeDetail
-            recipe={selectedRecipe}
-            onBack={() => setView('collection')}
-            checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
-            onEdit={() => {
-              setEditingRecipe(selectedRecipe);
-              setEditorReturnView('detail');
-              setView('editor');
-            }}
-            deleteNeedsConfirmation={pendingDeleteId === selectedRecipe.id}
-            onDelete={() => requestDelete(selectedRecipe)}
-            onCancelDelete={() => setPendingDeleteId('')}
-            onFavorite={() => toggleFavorite(selectedRecipe)}
-            onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
-            onResetIngredients={() => resetIngredients(selectedRecipe.id)}
-          />
-        ) : view === 'detail' ? (
-          <EmptyDetail onCreate={startNewRecipe} />
-        ) : null}
+        <section
+          className="desktop-preview-pane"
+          role="region"
+          aria-label="Recipe preview"
+          data-pane-content={view === 'settings' ? 'settings' : view === 'editor' ? 'editor' : 'preview'}
+          data-mobile-state={view === 'collection' ? 'inactive' : 'active'}
+        >
+          {view === 'settings' ? (
+            <SettingsPanel
+              cookbook={cookbook}
+              authEmail={authEmail}
+              inviteCode={inviteCode}
+              recipes={recipes}
+              syncState={syncState}
+              statusMessage={statusMessage}
+              tags={tags}
+              selectedTags={selectedTags}
+              favoritesOnly={favoritesOnly}
+              initialSection={settingsTarget}
+              onAuthEmailChange={setAuthEmail}
+              onInviteCodeChange={setInviteCode}
+              onMagicLink={submitMagicLink}
+              onInvite={submitInvite}
+              onImportMarkdown={(value) => void importMarkdown(value)}
+              onRefresh={() => void refreshRecipes()}
+              onToggleTag={toggleTag}
+              onToggleFavorites={() => setFavoritesOnly((value) => !value)}
+              onSignOut={() => void signOut()}
+              backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
+              onBack={() => setView(settingsReturnView)}
+            />
+          ) : null}
+          {(view === 'editor' || (view === 'settings' && settingsReturnView === 'editor')) && editingRecipe ? (
+            <RecipeEditor
+              inactive={view !== 'editor'}
+              recipe={editingRecipe}
+              onCancel={() => {
+                setEditingRecipe(null);
+                setView(editorReturnView);
+              }}
+              onSave={(recipe) => {
+                setPendingDeleteId('');
+                void persistRecipe(recipe);
+              }}
+            />
+          ) : null}
+          {(view === 'collection' || view === 'detail') && selectedRecipe ? (
+            <RecipeDetail
+              recipe={selectedRecipe}
+              showBack={view === 'detail'}
+              onBack={() => setView('collection')}
+              checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
+              onEdit={() => {
+                setEditingRecipe(selectedRecipe);
+                setEditorReturnView('detail');
+                setView('editor');
+              }}
+              deleteNeedsConfirmation={pendingDeleteId === selectedRecipe.id}
+              onDelete={() => requestDelete(selectedRecipe)}
+              onCancelDelete={() => setPendingDeleteId('')}
+              onFavorite={() => toggleFavorite(selectedRecipe)}
+              onToggleIngredient={(ingredientIndex) => toggleIngredient(selectedRecipe.id, ingredientIndex)}
+              onResetIngredients={() => resetIngredients(selectedRecipe.id)}
+            />
+          ) : view === 'detail' ? (
+            <EmptyDetail onCreate={startNewRecipe} />
+          ) : null}
+        </section>
       </main>
 
       {lastDeleted ? (
@@ -703,13 +742,32 @@ export function RecipeList({
             onClick={() => onSelect(recipe)}
             aria-label={`Open ${recipe.title}`}
           >
-            <span className="recipe-title">{recipe.title}</span>
+            <span className="recipe-row-copy">
+              <span className="recipe-title">{recipe.title}</span>
+              <span className="recipe-row-metadata desktop-only">
+                <span>{recipe.sourceLabel || 'Personal recipe'}</span>
+                <span>Modified {formatModifiedDate(recipe.updatedAt)}</span>
+              </span>
+            </span>
             <RecipeThumbnail recipe={recipe} />
           </button>
         </li>
       ))}
     </ul>
   );
+}
+
+function formatModifiedDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'date unknown';
+  }
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }).format(date);
 }
 
 export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
@@ -747,6 +805,7 @@ export function RecipeThumbnail({ recipe }: { recipe: Recipe }) {
 
 function RecipeDetail({
   recipe,
+  showBack,
   onBack,
   checkedIngredientIndexes,
   onEdit,
@@ -758,6 +817,7 @@ function RecipeDetail({
   deleteNeedsConfirmation
 }: {
   recipe: Recipe;
+  showBack: boolean;
   onBack: () => void;
   checkedIngredientIndexes: number[];
   onEdit: () => void;
@@ -773,9 +833,11 @@ function RecipeDetail({
 
   return (
     <article className="recipe-detail active-surface" id="recipe-detail">
-      <button type="button" className="text-button screen-back" onClick={onBack}>
-        <ChevronLeft size={18} /> Back to recipes
-      </button>
+      {showBack ? (
+        <button type="button" className="text-button screen-back" onClick={onBack}>
+          <ChevronLeft size={18} /> Back to recipes
+        </button>
+      ) : null}
       <div className="detail-head">
         <div>
           <h2>{recipe.title}</h2>
