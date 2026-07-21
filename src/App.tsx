@@ -60,6 +60,12 @@ const BLANK_RECIPE: Recipe = {
 type IngredientChecks = Record<string, number[]>;
 type AppView = 'collection' | 'detail' | 'editor' | 'settings';
 
+function createLocalRecipeId() {
+  const id = globalThis.crypto?.randomUUID?.()
+    ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return `local-${id}`;
+}
+
 export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -308,7 +314,7 @@ export default function App() {
     const now = new Date().toISOString();
     setEditingRecipe({
       ...BLANK_RECIPE,
-      id: `local-${crypto.randomUUID()}`,
+      id: createLocalRecipeId(),
       createdAt: now,
       updatedAt: now
     });
@@ -327,7 +333,7 @@ export default function App() {
 
   async function importMarkdown(markdown: string) {
     const parsed = parseRecipeMarkdown(markdown, `import-${Date.now()}`);
-    await persistRecipe({ ...parsed, id: `local-${crypto.randomUUID()}` });
+    await persistRecipe({ ...parsed, id: createLocalRecipeId() });
   }
 
   return (
@@ -343,12 +349,20 @@ export default function App() {
             <Plus size={20} />
           </button>
         </div>
-        <div className="brand-lockup">
+        <a
+          href="#recipe-index"
+          className="brand-lockup"
+          aria-label="Recipe Box home"
+          onClick={(event) => {
+            event.preventDefault();
+            setView('collection');
+          }}
+        >
           <span className="brand-mark" aria-hidden="true">
             <Archive size={22} />
           </span>
           <h1>Recipe Box</h1>
-        </div>
+        </a>
         <div className="topbar-actions">
           <button
             type="button"
@@ -369,6 +383,7 @@ export default function App() {
 
       <main className={`workspace app-view-${view}`} data-view={view}>
         {view === 'collection' || view === 'detail' ? <aside
+          id="recipe-index"
           className={view === 'detail' ? 'recipe-rail wide-collection-context' : 'recipe-rail active-surface'}
           aria-label="Recipe browser"
           data-mobile-state={view === 'detail' ? 'inactive' : 'active'}
@@ -764,7 +779,7 @@ function RecipeEditor({
     const now = new Date().toISOString();
     onSave({
       ...recipe,
-      id: recipe.id || `local-${crypto.randomUUID()}`,
+      id: recipe.id || createLocalRecipeId(),
       title: draft.title.trim(),
       sourceLabel: draft.sourceLabel.trim(),
       sourceUrl: draft.sourceUrl.trim(),

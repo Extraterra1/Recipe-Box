@@ -99,6 +99,67 @@ describe('Recipe Box app shell', () => {
     expect(screen.queryByLabelText('Tags')).not.toBeInTheDocument();
   });
 
+  it('uses the full brand lockup to return from detail to the recipe index with collection context intact', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    list.scrollTop = 420;
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search recipes' }), 'pizza');
+    await userEvent.click(within(list).getByRole('button', { name: /Open NYC Pizza/i }));
+
+    await userEvent.click(screen.getByRole('link', { name: 'Recipe Box home' }));
+
+    expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 420);
+    expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toHaveValue('pizza');
+  });
+
+  it('uses the brand lockup to return from the editor to the recipe index', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    list.scrollTop = 360;
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Recipe Box home' }));
+
+    expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 360);
+  });
+
+  it('uses the brand lockup to return from settings to the recipe index', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    list.scrollTop = 280;
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    expect(screen.getByRole('region', { name: /Recipe Box/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Recipe Box home' }));
+
+    expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 280);
+  });
+
+  it('opens the create editor from mobile collection and detail views when randomUUID is unavailable', async () => {
+    const originalCrypto = globalThis.crypto;
+    vi.stubGlobal('crypto', { ...originalCrypto, randomUUID: undefined });
+
+    try {
+      render(<App />);
+
+      await screen.findByRole('list', { name: 'Recipes' });
+      await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+      expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      const returnedList = screen.getByRole('list', { name: 'Recipes' });
+      await userEvent.click(within(returnedList).getByRole('button', { name: /Open Baguette/i }));
+      await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+      expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('uses a decorative lazy-loaded image when a recipe has a thumbnail URL', () => {
     render(<RecipeThumbnail recipe={imageRecipe} />);
 
