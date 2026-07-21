@@ -84,16 +84,24 @@ describe('Recipe Box app shell', () => {
   });
 
   it('opens create, settings, and existing data management from library navigation', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
+    scrollIntoView.mockClear();
     render(<App />);
 
     await screen.findByRole('list', { name: 'Recipes' });
     const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
 
     await userEvent.click(within(navigation).getByRole('button', { name: 'Import/Export' }));
-    expect(screen.getByRole('region', { name: 'Data management' })).toBeInTheDocument();
+    const dataManagement = screen.getByRole('region', { name: 'Data management' });
+    await waitFor(() => {
+      expect(scrollIntoView.mock.instances[scrollIntoView.mock.instances.length - 1]).toBe(dataManagement);
+    });
 
     await userEvent.click(within(navigation).getByRole('button', { name: 'Settings' }));
-    expect(screen.getByRole('heading', { name: 'Recipe Box' })).toBeInTheDocument();
+    const settings = screen.getByRole('region', { name: /Recipe Box$/ });
+    await waitFor(() => {
+      expect(scrollIntoView.mock.instances[scrollIntoView.mock.instances.length - 1]).toBe(settings);
+    });
 
     await userEvent.click(within(navigation).getByRole('button', { name: 'Create Recipe' }));
     expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();

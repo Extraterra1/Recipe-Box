@@ -1070,16 +1070,16 @@ function SettingsPanel({
 }) {
   const [markdown, setMarkdown] = useState('');
   const cloudReady = hasSupabaseConfig;
+  const overviewRef = useRef<HTMLElement | null>(null);
   const dataSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (initialSection === 'data') {
-      dataSectionRef.current?.scrollIntoView({ block: 'start' });
-    }
+    const target = initialSection === 'data' ? dataSectionRef.current : overviewRef.current;
+    target?.scrollIntoView({ block: 'start' });
   }, [initialSection]);
 
   return (
-    <section className="settings-surface" aria-labelledby="settings-heading">
+    <section className="settings-surface" aria-labelledby="settings-heading" ref={overviewRef}>
       <button type="button" className="text-button screen-back" onClick={onBack}>
         <ChevronLeft size={18} /> {backLabel}
       </button>
