@@ -23,6 +23,58 @@ const imageRecipe: Recipe = {
 };
 
 describe('Recipe Box app shell', () => {
+  it('provides persistent library navigation with recipe, favorite, tag, and management destinations', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+
+    expect(within(navigation).getByRole('button', { name: /Recipe Box home/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: /All Recipes, \d+ recipes/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: /Browse favorites, \d+ recipes/i })).toBeInTheDocument();
+    expect(within(navigation).getByRole('group', { name: 'Recipe tags' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Create Recipe' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Import/Export' })).toBeInTheDocument();
+    expect(within(navigation).getByRole('button', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('filters the recipe index from library navigation and All Recipes clears filters without clearing search', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+    const search = screen.getByRole('searchbox', { name: 'Search recipes' });
+    await userEvent.type(search, 'pizza');
+
+    await userEvent.click(within(navigation).getByRole('button', { name: /tag pizza/i }));
+    expect(within(list).getByText('NYC Pizza')).toBeInTheDocument();
+    expect(search).toHaveValue('pizza');
+
+    await userEvent.click(within(navigation).getByRole('button', { name: /Browse favorites/i }));
+    expect(search).toHaveValue('pizza');
+
+    await userEvent.click(within(navigation).getByRole('button', { name: /All Recipes/i }));
+    expect(search).toHaveValue('pizza');
+    expect(within(navigation).getByRole('button', { name: /Browse favorites/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(within(navigation).getByRole('button', { name: /tag pizza/i })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('opens create, settings, and existing data management from library navigation', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
+
+    await userEvent.click(within(navigation).getByRole('button', { name: 'Import/Export' }));
+    expect(screen.getByRole('region', { name: 'Data management' })).toBeInTheDocument();
+
+    await userEvent.click(within(navigation).getByRole('button', { name: 'Settings' }));
+    expect(screen.getByRole('heading', { name: 'Recipe Box' })).toBeInTheDocument();
+
+    await userEvent.click(within(navigation).getByRole('button', { name: 'Create Recipe' }));
+    expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+  });
+
   it('shows stable recipe-row skeletons while the collection is loading', () => {
     render(
       <RecipeList

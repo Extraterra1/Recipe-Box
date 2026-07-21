@@ -79,6 +79,7 @@ export default function App() {
   const [view, setView] = useState<AppView>('collection');
   const [editorReturnView, setEditorReturnView] = useState<'collection' | 'detail'>('collection');
   const [settingsReturnView, setSettingsReturnView] = useState<Exclude<AppView, 'settings'>>('collection');
+  const [settingsTarget, setSettingsTarget] = useState<'overview' | 'data'>('overview');
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -111,6 +112,11 @@ export default function App() {
   }, [view]);
 
   const tags = useMemo(() => getAllTags(recipes), [recipes]);
+  const favoriteCount = useMemo(() => recipes.filter((recipe) => recipe.favorite).length, [recipes]);
+  const tagCounts = useMemo(
+    () => Object.fromEntries(tags.map((tag) => [tag, recipes.filter((recipe) => recipe.tags.includes(tag)).length])),
+    [recipes, tags]
+  );
   const filteredRecipes = useMemo(
     () => filterRecipes(recipes, { query, tags: selectedTags, favoritesOnly }).sort((a, b) => a.title.localeCompare(b.title)),
     [favoritesOnly, query, recipes, selectedTags]
@@ -322,6 +328,21 @@ export default function App() {
     setView('editor');
   }
 
+  function openSettings(target: 'overview' | 'data' = 'overview') {
+    rememberCollectionScroll();
+    if (view !== 'settings') {
+      setSettingsReturnView(view);
+    }
+    setSettingsTarget(target);
+    setView('settings');
+  }
+
+  function showAllRecipes() {
+    setFavoritesOnly(false);
+    setSelectedTags([]);
+    setView('collection');
+  }
+
   function rememberCollectionScroll() {
     if (recipeListRef.current) {
       collectionScrollTop.current = recipeListRef.current.scrollTop;
@@ -367,13 +388,7 @@ export default function App() {
           <button
             type="button"
             className={view === 'settings' ? 'icon-button active' : 'icon-button'}
-            onClick={() => {
-              rememberCollectionScroll();
-              if (view !== 'settings') {
-                setSettingsReturnView(view);
-              }
-              setView('settings');
-            }}
+            onClick={() => openSettings()}
             aria-label="Open household settings"
           >
             <Settings size={18} />
@@ -382,6 +397,27 @@ export default function App() {
       </header>
 
       <main className={`workspace app-view-${view}`} data-view={view}>
+        <LibraryNavigation
+          recipeCount={recipes.length}
+          favoriteCount={favoriteCount}
+          tags={tags}
+          tagCounts={tagCounts}
+          favoritesOnly={favoritesOnly}
+          selectedTags={selectedTags}
+          onHome={showAllRecipes}
+          onAllRecipes={showAllRecipes}
+          onFavorites={() => {
+            setFavoritesOnly(true);
+            setView('collection');
+          }}
+          onToggleTag={(tag) => {
+            toggleTag(tag);
+            setView('collection');
+          }}
+          onCreate={startNewRecipe}
+          onImportExport={() => openSettings('data')}
+          onSettings={() => openSettings()}
+        />
         {view === 'collection' || view === 'detail' ? <aside
           id="recipe-index"
           className={view === 'detail' ? 'recipe-rail wide-collection-context' : 'recipe-rail active-surface'}
@@ -433,6 +469,7 @@ export default function App() {
             tags={tags}
             selectedTags={selectedTags}
             favoritesOnly={favoritesOnly}
+            initialSection={settingsTarget}
             onAuthEmailChange={setAuthEmail}
             onInviteCodeChange={setInviteCode}
             onMagicLink={submitMagicLink}
@@ -494,6 +531,104 @@ export default function App() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function LibraryNavigation({
+  recipeCount,
+  favoriteCount,
+  tags,
+  tagCounts,
+  favoritesOnly,
+  selectedTags,
+  onHome,
+  onAllRecipes,
+  onFavorites,
+  onToggleTag,
+  onCreate,
+  onImportExport,
+  onSettings
+}: {
+  recipeCount: number;
+  favoriteCount: number;
+  tags: string[];
+  tagCounts: Record<string, number>;
+  favoritesOnly: boolean;
+  selectedTags: string[];
+  onHome: () => void;
+  onAllRecipes: () => void;
+  onFavorites: () => void;
+  onToggleTag: (tag: string) => void;
+  onCreate: () => void;
+  onImportExport: () => void;
+  onSettings: () => void;
+}) {
+  const allRecipesActive = !favoritesOnly && selectedTags.length === 0;
+
+  return (
+    <nav className="library-navigation" aria-label="Library navigation">
+      <button type="button" className="library-identity" aria-label="Recipe Box home" onClick={onHome}>
+        <span className="brand-mark" aria-hidden="true"><Archive size={20} /></span>
+        <span>Recipe Box</span>
+      </button>
+
+      <div className="library-primary-navigation">
+        <button
+          type="button"
+          className={allRecipesActive ? 'library-navigation-row active' : 'library-navigation-row'}
+          aria-label={`All Recipes, ${recipeCount} recipes`}
+          aria-current={allRecipesActive ? 'page' : undefined}
+          onClick={onAllRecipes}
+        >
+          <BookOpen size={17} aria-hidden="true" />
+          <span>All Recipes</span>
+          <span aria-hidden="true">{recipeCount}</span>
+        </button>
+        <button
+          type="button"
+          className={favoritesOnly ? 'library-navigation-row active' : 'library-navigation-row'}
+          aria-label={`Browse favorites, ${favoriteCount} recipes`}
+          aria-pressed={favoritesOnly}
+          onClick={onFavorites}
+        >
+          <Heart size={17} aria-hidden="true" />
+          <span>Favorites</span>
+          <span aria-hidden="true">{favoriteCount}</span>
+        </button>
+      </div>
+
+      <div className="library-tags" role="group" aria-label="Recipe tags">
+        <p>Tags</p>
+        {tags.map((tag) => {
+          const selected = selectedTags.includes(tag);
+          return (
+            <button
+              type="button"
+              key={tag}
+              className={selected ? 'library-navigation-row active' : 'library-navigation-row'}
+              aria-label={`Tag ${tag}, ${tagCounts[tag] ?? 0} recipes`}
+              aria-pressed={selected}
+              onClick={() => onToggleTag(tag)}
+            >
+              <span>{tag}</span>
+              <span aria-hidden="true">{tagCounts[tag] ?? 0}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="library-management-navigation">
+        <button type="button" className="library-navigation-row" onClick={onCreate}>
+          <Plus size={17} aria-hidden="true" /> <span>Create Recipe</span>
+        </button>
+        <button type="button" className="library-navigation-row" onClick={onImportExport}>
+          <Download size={17} aria-hidden="true" /> <span>Import/Export</span>
+        </button>
+        <button type="button" className="library-navigation-row" onClick={onSettings}>
+          <Settings size={17} aria-hidden="true" /> <span>Settings</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 
@@ -898,6 +1033,7 @@ function SettingsPanel({
   tags,
   selectedTags,
   favoritesOnly,
+  initialSection,
   onAuthEmailChange,
   onInviteCodeChange,
   onMagicLink,
@@ -919,6 +1055,7 @@ function SettingsPanel({
   tags: string[];
   selectedTags: string[];
   favoritesOnly: boolean;
+  initialSection: 'overview' | 'data';
   onAuthEmailChange: (value: string) => void;
   onInviteCodeChange: (value: string) => void;
   onMagicLink: (event: FormEvent<HTMLFormElement>) => void;
@@ -933,6 +1070,13 @@ function SettingsPanel({
 }) {
   const [markdown, setMarkdown] = useState('');
   const cloudReady = hasSupabaseConfig;
+  const dataSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (initialSection === 'data') {
+      dataSectionRef.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [initialSection]);
 
   return (
     <section className="settings-surface" aria-labelledby="settings-heading">
@@ -1025,40 +1169,42 @@ function SettingsPanel({
           </form>
         </section>
 
-        <section className="settings-section">
-          <h3>Export</h3>
-          <div className="button-row">
-            <button type="button" className="button subtle" onClick={() => downloadRecipes(recipes, 'markdown')}>
-              <Download size={16} /> Markdown
-            </button>
-            <button type="button" className="button subtle" onClick={() => downloadRecipes(recipes, 'json')}>
-              <Download size={16} /> JSON
-            </button>
-          </div>
-          <textarea readOnly value={exportRecipesAsMarkdown(recipes.slice(0, 1))} aria-label="Export preview" rows={8} />
-        </section>
+        <div className="settings-data-management" role="region" aria-label="Data management" ref={dataSectionRef}>
+          <section className="settings-section">
+            <h3>Export</h3>
+            <div className="button-row">
+              <button type="button" className="button subtle" onClick={() => downloadRecipes(recipes, 'markdown')}>
+                <Download size={16} /> Markdown
+              </button>
+              <button type="button" className="button subtle" onClick={() => downloadRecipes(recipes, 'json')}>
+                <Download size={16} /> JSON
+              </button>
+            </div>
+            <textarea readOnly value={exportRecipesAsMarkdown(recipes.slice(0, 1))} aria-label="Export preview" rows={8} />
+          </section>
 
-        <section className="settings-section">
-          <h3>Import</h3>
-          <textarea
-            value={markdown}
-            onChange={(event) => setMarkdown(event.target.value)}
-            rows={8}
-            placeholder="# Recipe title"
-            aria-label="Markdown import"
-          />
-          <button
-            type="button"
-            className="button primary"
-            onClick={() => {
-              onImportMarkdown(markdown);
-              setMarkdown('');
-            }}
-            disabled={!markdown.trim()}
-          >
-            <Upload size={16} /> Import recipe
-          </button>
-        </section>
+          <section className="settings-section">
+            <h3>Import</h3>
+            <textarea
+              value={markdown}
+              onChange={(event) => setMarkdown(event.target.value)}
+              rows={8}
+              placeholder="# Recipe title"
+              aria-label="Markdown import"
+            />
+            <button
+              type="button"
+              className="button primary"
+              onClick={() => {
+                onImportMarkdown(markdown);
+                setMarkdown('');
+              }}
+              disabled={!markdown.trim()}
+            >
+              <Upload size={16} /> Import recipe
+            </button>
+          </section>
+        </div>
       </div>
     </section>
   );
