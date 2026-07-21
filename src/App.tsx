@@ -64,7 +64,11 @@ export type RecipeSort = 'alphabetical' | 'recent';
 export function sortRecipes(recipes: Recipe[], sort: RecipeSort) {
   return [...recipes].sort((a, b) => {
     if (sort === 'recent') {
-      const dateDifference = Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+      const aParsed = Date.parse(a.updatedAt);
+      const bParsed = Date.parse(b.updatedAt);
+      const aTimestamp = Number.isFinite(aParsed) ? aParsed : Number.NEGATIVE_INFINITY;
+      const bTimestamp = Number.isFinite(bParsed) ? bParsed : Number.NEGATIVE_INFINITY;
+      const dateDifference = bTimestamp - aTimestamp;
       if (dateDifference) {
         return dateDifference;
       }
@@ -236,7 +240,7 @@ export default function App() {
     }
   }
 
-  async function persistRecipe(recipe: Recipe) {
+  async function persistRecipe(recipe: Recipe, returnView: 'collection' | 'detail' = 'detail') {
     if (!cookbook) {
       return;
     }
@@ -247,7 +251,7 @@ export default function App() {
       setRecipes((current) => upsertRecipeList(current, saved));
       setSelectedId(saved.id);
       setEditingRecipe(null);
-      setView('detail');
+      setView(returnView);
       setSyncState(navigator.onLine ? 'success' : 'offline');
       setStatusMessage(navigator.onLine ? 'Saved and synced' : 'Saved offline');
     } catch (error) {
@@ -292,7 +296,7 @@ export default function App() {
   }
 
   function toggleFavorite(recipe: Recipe) {
-    void persistRecipe({ ...recipe, favorite: !recipe.favorite });
+    void persistRecipe({ ...recipe, favorite: !recipe.favorite }, view === 'collection' ? 'collection' : 'detail');
   }
 
   function requestDelete(recipe: Recipe) {
@@ -542,7 +546,7 @@ export default function App() {
               checkedIngredientIndexes={ingredientChecks[selectedRecipe.id] ?? []}
               onEdit={() => {
                 setEditingRecipe(selectedRecipe);
-                setEditorReturnView('detail');
+                setEditorReturnView(view === 'collection' ? 'collection' : 'detail');
                 setView('editor');
               }}
               deleteNeedsConfirmation={pendingDeleteId === selectedRecipe.id}

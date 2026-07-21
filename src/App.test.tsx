@@ -49,6 +49,22 @@ describe('Recipe Box app shell', () => {
     expect(source.map((recipe) => recipe.title)).toEqual(['Alpha', 'Zulu']);
   });
 
+  it('sorts recent recipes deterministically when dates tie or are invalid', () => {
+    const recipes = [
+      { ...imageRecipe, id: 'invalid-zulu', title: 'Zulu invalid', updatedAt: 'not-a-date' },
+      { ...imageRecipe, id: 'valid-zulu', title: 'Zulu valid', updatedAt: '2026-02-01T00:00:00.000Z' },
+      { ...imageRecipe, id: 'missing-alpha', title: 'Alpha missing', updatedAt: '' },
+      { ...imageRecipe, id: 'valid-alpha', title: 'Alpha valid', updatedAt: '2026-02-01T00:00:00.000Z' }
+    ];
+
+    expect(sortRecipes(recipes, 'recent').map((recipe) => recipe.id)).toEqual([
+      'valid-alpha',
+      'valid-zulu',
+      'missing-alpha',
+      'invalid-zulu'
+    ]);
+  });
+
   it('renders desktop source and modified metadata in each recipe row', () => {
     render(
       <RecipeList
@@ -78,6 +94,25 @@ describe('Recipe Box app shell', () => {
     expect(within(preview).getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Library navigation' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Recipe index' })).toBeInTheDocument();
+  });
+
+  it('keeps collection as the origin when favoriting or editing its desktop preview', async () => {
+    const { container } = render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+    await waitFor(() => {
+      expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'collection');
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Browse favorites, 0 recipes/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'editor');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(container.querySelector('.desktop-workspace')).toHaveAttribute('data-mobile-view', 'collection');
   });
 
   it('replaces preview with editor or settings while navigation and index remain co-mounted', async () => {
