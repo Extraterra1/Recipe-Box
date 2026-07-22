@@ -95,7 +95,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [recipeSort, setRecipeSort] = useState<RecipeSort>('alphabetical');
+  const [recipeSort, setRecipeSort] = useState<RecipeSort>('recent');
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [cookbook, setCookbook] = useState<Cookbook | null>(null);
   const [syncState, setSyncState] = useState<SyncState>('idle');

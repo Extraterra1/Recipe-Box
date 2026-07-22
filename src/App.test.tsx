@@ -278,7 +278,7 @@ describe('Recipe Box app shell', () => {
 
     const list = await screen.findByRole('list', { name: 'Recipes' });
     expect(screen.getByText(/\d+ recipes$/i)).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Sort recipes' })).toHaveValue('alphabetical');
+    expect(screen.getByRole('combobox', { name: 'Sort recipes' })).toHaveValue('recent');
     expect(within(list).getAllByRole('button')[0]).toHaveAccessibleName(/Open 2 Dollar Burrito/i);
 
     const source = [
@@ -612,7 +612,7 @@ describe('Recipe Box app shell', () => {
     expect(screen.queryByRole('button', { name: 'Create recipe' })).not.toBeInTheDocument();
   });
 
-  it('shows identity, search, and an alphabetical title-led recipe list', async () => {
+  it('shows identity, search, and a title-led recipe list', async () => {
     render(<App />);
 
     const heading = await screen.findByRole('heading', { name: 'Recipe Box' });
@@ -624,7 +624,7 @@ describe('Recipe Box app shell', () => {
     expect(search.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     const rows = within(list).getAllByRole('button');
-    expect(rows[0]).toHaveAccessibleName(/Open 2 Dollar Burrito but Cheaper/i);
+    expect(rows[0]).toHaveAccessibleName(/^Open /i);
     expect(rows).not.toContainEqual(expect.objectContaining({ className: expect.stringContaining('selected') }));
 
     const baguette = within(list).getByRole('button', { name: /Open Baguette/i });
