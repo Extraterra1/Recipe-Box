@@ -24,6 +24,14 @@ describe('search focus styling', () => {
   });
 });
 
+describe('mobile form controls', () => {
+  it('keeps every text-entry control large enough to prevent focus zoom', () => {
+    expect(styles).toMatch(
+      /@media \(max-width: 759px\)\s*\{[\s\S]*?input, textarea, select\s*\{[^}]*font-size:\s*16px;[^}]*\}/,
+    );
+  });
+});
+
 describe('mobile recipe panels', () => {
   it('shows the pill toggle and only its active panel below the mobile breakpoint', () => {
     expect(styles).toMatch(/\.recipe-panel-toggle\s*\{[^}]*display:\s*none;/s);

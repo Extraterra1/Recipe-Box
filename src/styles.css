@@ -493,6 +493,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 }
 
 @media (max-width: 759px) {
+  input, textarea, select { font-size: 16px; }
   .app-shell {
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
