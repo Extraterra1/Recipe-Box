@@ -7,14 +7,19 @@ import {
   RecipeImportError
 } from './recipeImport';
 
+const mockSupabaseConfig = vi.hoisted(() => ({ configured: true }));
+
 vi.mock('./supabaseClient', () => ({
   getSupabaseClient: vi.fn(),
-  hasSupabaseConfig: true
+  get hasSupabaseConfig() {
+    return mockSupabaseConfig.configured;
+  }
 }));
 
 describe('recipe URL import', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSupabaseConfig.configured = true;
     vi.stubGlobal('navigator', { onLine: true });
   });
 
@@ -36,6 +41,19 @@ describe('recipe URL import', () => {
       available: false,
       reason: 'Connect to the internet to import a recipe.'
     });
+  });
+
+  it('reports unconfigured cloud import and does not initialize Supabase', async () => {
+    mockSupabaseConfig.configured = false;
+
+    expect(getRecipeImportAvailability()).toEqual({
+      available: false,
+      reason: 'Cloud import is not configured.'
+    });
+    await expect(importRecipeFromUrl('https://example.com/recipe')).rejects.toEqual(
+      expect.objectContaining({ code: 'UNAVAILABLE', message: 'Cloud import is not configured.' })
+    );
+    expect(getSupabaseClient).not.toHaveBeenCalled();
   });
 
   it('invokes the lazy authenticated function and returns a safe draft', async () => {
