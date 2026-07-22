@@ -4,10 +4,10 @@ import { createPinnedTransport } from './runtimeTransport.ts';
 import { importRecipe } from './service.ts';
 import { ImportError } from './security.ts';
 
-async function resolveHost(hostname: string): Promise<string[]> {
+async function resolveHost(hostname: string, signal?: AbortSignal): Promise<string[]> {
   const addresses = await Promise.allSettled([
-    Deno.resolveDns(hostname, 'A'),
-    Deno.resolveDns(hostname, 'AAAA'),
+    Deno.resolveDns(hostname, 'A', { signal }),
+    Deno.resolveDns(hostname, 'AAAA', { signal }),
   ]);
   return addresses.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
 }

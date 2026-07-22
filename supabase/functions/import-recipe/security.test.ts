@@ -2,12 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 import { ImportError, assertSafeUrl, fetchRecipePage, type PinnedTransport } from './security';
 
 describe('recipe URL security', () => {
-  it.each(['ftp://example.com/a', 'https://user:pass@example.com/a', 'http://localhost/a', 'http://127.0.0.1/a', 'http://169.254.1.2/a', 'http://10.1.2.3/a', 'http://[::1]/a', 'http://[2001:db8::1]/a'])('rejects unsafe URL %s', async (value) => {
+  it.each(['ftp://example.com/a', 'https://user:pass@example.com/a', 'http://localhost/a', 'http://127.0.0.1/a', 'http://169.254.1.2/a', 'http://10.1.2.3/a', 'http://[::1]/a', 'http://[2001:db8::1]/a', 'http://[::ffff:7f00:1]/a', 'http://[64:ff9b::7f00:1]/a'])('rejects unsafe URL %s', async (value) => {
     await expect(assertSafeUrl(value, vi.fn())).rejects.toBeInstanceOf(ImportError);
   });
 
   it('rejects hostnames resolving to private addresses', async () => {
     await expect(assertSafeUrl('https://recipes.example/a', async () => ['192.168.1.3'])).rejects.toMatchObject({ code: 'BLOCKED_URL' });
+  });
+
+  it.each(['::ffff:7f00:1', '::ffff:c0a8:101', '64:ff9b::7f00:1'])('rejects encoded private DNS result %s', async (address) => {
+    await expect(assertSafeUrl('https://recipes.example/a', async () => [address])).rejects.toMatchObject({ code: 'BLOCKED_URL' });
+  });
+
+  it('applies the request deadline while DNS is unresolved', async () => {
+    const never = () => new Promise<string[]>(() => undefined);
+    const transport: PinnedTransport = async () => new Response('unused');
+    await expect(fetchRecipePage('https://recipes.example/a', { resolveHost: never, transport, timeoutMs: 10 })).rejects.toMatchObject({ code: 'FETCH_FAILED' });
   });
 
   it('revalidates redirect targets', async () => {

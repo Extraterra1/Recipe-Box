@@ -26,17 +26,14 @@ function isRecipe(value: unknown): value is JsonRecord {
   return list(value['@type']).some((type) => typeof type === 'string' && type.toLowerCase() === 'recipe');
 }
 
-function findRecipe(value: unknown): JsonRecord | undefined {
-  if (isRecipe(value)) return value;
+function findRecipes(value: unknown, recipes: JsonRecord[] = []): JsonRecord[] {
+  if (isRecipe(value)) recipes.push(value);
   if (Array.isArray(value)) {
-    for (const child of value) {
-      const found = findRecipe(child);
-      if (found) return found;
-    }
+    for (const child of value) findRecipes(child, recipes);
   } else if (record(value) && Array.isArray(value['@graph'])) {
-    return findRecipe(value['@graph']);
+    findRecipes(value['@graph'], recipes);
   }
-  return undefined;
+  return recipes;
 }
 
 function imageUrl(value: unknown): string {
@@ -75,7 +72,10 @@ function instructionLines(value: unknown): string[] {
 function durationMinutes(value: unknown): number {
   const raw = text(value);
   const match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/i.exec(raw);
-  return match ? Number(match[1] || 0) * 1440 + Number(match[2] || 0) * 60 + Number(match[3] || 0) : 0;
+  if (match) return Number(match[1] || 0) * 1440 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
+  const hours = /(?:^|[\s,])(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i.exec(raw);
+  const minutes = /(?:^|[\s,])(\d+)\s*(?:m|min|mins|minute|minutes)\b/i.exec(raw);
+  return Math.round(Number(hours?.[1] || 0) * 60 + Number(minutes?.[1] || 0));
 }
 
 function displayDuration(minutes: number): string {
@@ -183,15 +183,44 @@ function fromElaraCard(html: string, sourceUrl: string): ImportedRecipeDraft | u
   return { title, imageUrl: image ? new URL(image, url).href : '', sourceLabel: brand, sourceUrl, metadata: servings, ingredients, directions, notes: [], nutrition: [], tags: [], favorite: false };
 }
 
+function richTextSections(block: string): string[] {
+  const values: string[] = [];
+  for (const match of block.matchAll(/<p\b[^>]*>[\s\S]*?<strong\b[^>]*>([\s\S]*?)<\/strong>[\s\S]*?<\/p>|<li\b[^>]*>([\s\S]*?)<\/li>/gi)) {
+    const heading = plainHtml(match[1] || '').replace(/:\s*$/, '').trim();
+    const item = plainHtml(match[2] || '');
+    if (heading && !/^\W*notes?\b/i.test(heading)) values.push(heading);
+    else if (item) values.push(item);
+  }
+  return values;
+}
+
+function mergeJoshuaHtml(draft: ImportedRecipeDraft, html: string, sourceUrl: string): ImportedRecipeDraft {
+  const hostname = new URL(sourceUrl).hostname.replace(/^www\./, '').toLowerCase();
+  if (hostname !== 'joshuaweissman.com') return draft;
+  const ingredients = richTextSections(classBlock(html, 'ingredients-list'));
+  const directions = richTextSections(classBlock(html, 'directions-list'));
+  return {
+    ...draft,
+    ingredients: draft.ingredients.length ? draft.ingredients : ingredients,
+    directions: draft.directions.length ? draft.directions : directions,
+  };
+}
+
 export function parseRecipeHtml(html: string, sourceUrl: string): ImportedRecipeDraft {
+  let partialDraft: ImportedRecipeDraft | undefined;
   const scripts = html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   for (const match of scripts) {
     try {
-      const recipe = findRecipe(JSON.parse(match[1]));
-      const draft = recipe && fromJsonLd(recipe, sourceUrl);
-      if (draft) return draft;
+      for (const recipe of findRecipes(JSON.parse(match[1]))) {
+        const draft = fromJsonLd(recipe, sourceUrl);
+        if (!draft) continue;
+        const merged = mergeJoshuaHtml(draft, html, sourceUrl);
+        if (merged.ingredients.length || merged.directions.length) return merged;
+        partialDraft ??= merged;
+      }
     } catch { /* Ignore malformed structured-data blocks and inspect the others. */ }
   }
+  if (partialDraft) return partialDraft;
   const fallback = fromElaraCard(html, sourceUrl);
   if (fallback) return fallback;
   throw new RecipeParseError('No usable recipe was found on the page.');

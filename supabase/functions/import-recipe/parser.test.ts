@@ -5,21 +5,33 @@ import { parseRecipeHtml, RecipeParseError } from './parser';
 const fixture = (name: string) => readFileSync(`supabase/functions/import-recipe/fixtures/${name}`, 'utf8');
 
 describe('parseRecipeHtml', () => {
-  it('normalizes Recipe JSON-LD from an @graph with nested sections', () => {
+  it('merges the supplied Joshua server HTML into a substantive draft', () => {
     const draft = parseRecipeHtml(fixture('joshua-weissman.html'), 'https://www.joshuaweissman.com/recipes/perfect-nashville-hot-fried-chicken-at-home-2-ways-recipe');
     expect(draft).toMatchObject({
-      title: 'Perfect Nashville Hot Fried Chicken',
-      imageUrl: 'https://example.com/chicken.jpg',
+      title: 'Perfect Nashville Hot Fried Chicken at Home (2 Ways)',
+      imageUrl: 'https://cdn.example.com/chicken.jpg',
       sourceLabel: 'Joshua Weissman',
       sourceUrl: 'https://www.joshuaweissman.com/recipes/perfect-nashville-hot-fried-chicken-at-home-2-ways-recipe',
-      ingredients: ['2 lb chicken', '2 cups buttermilk'],
-      directions: ['Chicken', 'Marinate the chicken.', 'Fry: Fry until crisp.', 'Hot oil', 'Whisk spices into oil.'],
-      nutrition: ['Calories: 640 calories', 'Protein: 42 g'],
-      tags: ['Dinner', 'American', 'chicken', 'spicy'],
+      ingredients: ['Leg Quarter Marinade', '2 cups buttermilk', '4 chicken leg quarters', 'Dredge', '3 cups all-purpose flour'],
+      directions: ['Marinade', 'Whisk the marinade and add the chicken.', 'Frying', 'Dredge and fry until crisp.', 'Brush with hot oil.'],
+      tags: ['fried chicken', 'spicy'],
       favorite: false,
     });
-    expect(draft.metadata).toContain('4 servings');
+    expect(draft.metadata).toContain('4');
     expect(draft.metadata).toContain('1 hr 15 min');
+  });
+
+  it('normalizes ISO and human-readable durations', () => {
+    const cases = [['PT75M', '1 hr 15 min'], ['30 min', '30 min'], ['45 mins', '45 min'], ['1 hr, 15 mins', '1 hr 15 min']];
+    for (const [value, expected] of cases) {
+      const html = `<script type="application/ld+json">{"@type":"Recipe","name":"Timed","totalTime":"${value}"}</script>`;
+      expect(parseRecipeHtml(html, 'https://example.com').metadata).toBe(expected);
+    }
+  });
+
+  it('continues past an unusable Recipe node to a later valid one', () => {
+    const html = `<script type="application/ld+json">[{"@type":"Recipe","name":"Empty"},{"@type":"Recipe","name":"Valid","recipeIngredient":["one"]}]</script>`;
+    expect(parseRecipeHtml(html, 'https://example.com')).toMatchObject({ title: 'Valid', ingredients: ['one'] });
   });
 
   it('finds Recipe nodes in top-level arrays and tolerates malformed JSON-LD siblings', () => {
