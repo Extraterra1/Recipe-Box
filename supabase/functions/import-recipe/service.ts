@@ -1,12 +1,12 @@
 import { parseRecipeHtml, RecipeParseError, type ImportedRecipeDraft } from './parser.ts';
-import { fetchRecipePage, ImportError, type ResolveHost } from './security.ts';
+import { fetchRecipePage, ImportError, type PinnedTransport, type ResolveHost } from './security.ts';
 
-type ImportDependencies = { resolveHost: ResolveHost; fetcher?: typeof fetch };
+type ImportDependencies = { resolveHost: ResolveHost; transport: PinnedTransport };
 
 export async function importRecipe(body: unknown, dependencies: ImportDependencies): Promise<ImportedRecipeDraft> {
   const url = body && typeof body === 'object' && 'url' in body ? (body as { url?: unknown }).url : undefined;
   if (typeof url !== 'string' || !url.trim()) throw new ImportError('INVALID_URL', 'Enter a recipe URL.');
-  const page = await fetchRecipePage(url.trim(), { resolveHost: dependencies.resolveHost, fetcher: dependencies.fetcher });
+  const page = await fetchRecipePage(url.trim(), dependencies);
   try {
     return parseRecipeHtml(page.html, page.finalUrl);
   } catch (error) {

@@ -18,4 +18,5 @@ double_confirm_changes = true
 enable_confirmations = false
 
 [functions.import-recipe]
-verify_jwt = true
+# The function handles OPTIONS before withSupabase validates user JWTs on POST.
+verify_jwt = false

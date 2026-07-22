@@ -5,6 +5,7 @@ export class ImportError extends Error {
 }
 
 export type ResolveHost = (hostname: string) => Promise<string[]>;
+export type PinnedTransport = (request: { url: URL; approvedAddresses: string[]; signal: AbortSignal; headers: Record<string, string>; maxBytes: number }) => Promise<Response>;
 
 function blockedIpv4(ip: string): boolean {
   const parts = ip.split('.').map(Number);
@@ -28,7 +29,7 @@ function blockedIp(ip: string): boolean {
   return mapped ? blockedIpv4(mapped) : false;
 }
 
-export async function assertSafeUrl(value: string, resolveHost: ResolveHost): Promise<URL> {
+export async function assertSafeUrl(value: string, resolveHost: ResolveHost): Promise<{ url: URL; approvedAddresses: string[] }> {
   let url: URL;
   try { url = new URL(value); } catch { throw new ImportError('INVALID_URL', 'Enter a valid recipe URL.'); }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new ImportError('INVALID_URL', 'Only public HTTP and HTTPS URLs are supported.');
@@ -37,28 +38,27 @@ export async function assertSafeUrl(value: string, resolveHost: ResolveHost): Pr
   let addresses: string[];
   try { addresses = await resolveHost(hostname); } catch { throw new ImportError('FETCH_FAILED', 'The recipe site could not be reached.', 502); }
   if (!addresses.length || addresses.some(blockedIp)) throw new ImportError('BLOCKED_URL', 'That address cannot be imported.');
-  return url;
+  return { url, approvedAddresses: addresses };
 }
 
-type FetchOptions = { fetcher?: typeof fetch; resolveHost: ResolveHost; maxRedirects?: number; maxBytes?: number; timeoutMs?: number };
+type FetchOptions = { transport: PinnedTransport; resolveHost: ResolveHost; maxRedirects?: number; maxBytes?: number; timeoutMs?: number };
 
 export async function fetchRecipePage(value: string, options: FetchOptions): Promise<{ html: string; finalUrl: string }> {
-  const fetcher = options.fetcher ?? fetch;
   const maxRedirects = options.maxRedirects ?? 4;
   const maxBytes = options.maxBytes ?? 1_500_000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 10_000);
   try {
-    let url = await assertSafeUrl(value, options.resolveHost);
+    let target = await assertSafeUrl(value, options.resolveHost);
     for (let redirects = 0; ; redirects++) {
       let response: Response;
-      try { response = await fetcher(url, { redirect: 'manual', signal: controller.signal, headers: { accept: 'text/html,application/xhtml+xml' } }); }
+      try { response = await options.transport({ url: target.url, approvedAddresses: target.approvedAddresses, signal: controller.signal, headers: { accept: 'text/html,application/xhtml+xml' }, maxBytes }); }
       catch { throw new ImportError('FETCH_FAILED', 'The recipe site could not be reached.', 502); }
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         if (redirects >= maxRedirects) throw new ImportError('FETCH_FAILED', 'The recipe page redirected too many times.', 502);
         const location = response.headers.get('location');
         if (!location) throw new ImportError('FETCH_FAILED', 'The recipe site returned an invalid redirect.', 502);
-        url = await assertSafeUrl(new URL(location, url).href, options.resolveHost);
+        target = await assertSafeUrl(new URL(location, target.url).href, options.resolveHost);
         continue;
       }
       if (!response.ok) throw new ImportError('FETCH_FAILED', 'The recipe page could not be downloaded.', 502);
@@ -67,7 +67,7 @@ export async function fetchRecipePage(value: string, options: FetchOptions): Pro
       const declaredSize = Number(response.headers.get('content-length') || 0);
       if (declaredSize > maxBytes) throw new ImportError('FETCH_FAILED', 'The recipe page is too large.', 413);
       const reader = response.body?.getReader();
-      if (!reader) return { html: '', finalUrl: url.href };
+      if (!reader) return { html: '', finalUrl: target.url.href };
       const chunks: Uint8Array[] = [];
       let size = 0;
       while (true) {
@@ -80,7 +80,7 @@ export async function fetchRecipePage(value: string, options: FetchOptions): Pro
       const body = new Uint8Array(size);
       let offset = 0;
       for (const chunk of chunks) { body.set(chunk, offset); offset += chunk.byteLength; }
-      return { html: new TextDecoder().decode(body), finalUrl: url.href };
+      return { html: new TextDecoder().decode(body), finalUrl: target.url.href };
     }
   } finally { clearTimeout(timer); }
 }

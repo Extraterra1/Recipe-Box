@@ -159,9 +159,11 @@ function microdataItems(block: string, itemprop: string): string[] {
 }
 
 function fromElaraCard(html: string, sourceUrl: string): ImportedRecipeDraft | undefined {
-  if (!/id=["']elara-recipe["']/i.test(html)) return undefined;
-  const card = classBlock(html, 'lt-recipe');
-  if (!card || !/itemtype=["']https?:\/\/schema\.org\/Recipe["']/i.test(html)) return undefined;
+  const pair = /<div\b(?=[^>]*\bid=["']elara-recipe["'])[^>]*>\s*<\/div>\s*(<div\b(?=[^>]*\bclass=["'][^"']*\blt-recipe\b[^"']*["'])(?=[^>]*\bid=["']lt-recipe["'])(?=[^>]*\bitemtype=["']https?:\/\/schema\.org\/Recipe["'])[^>]*>)/i.exec(html);
+  if (!pair) return undefined;
+  const subtree = html.slice(pair.index + pair[0].lastIndexOf(pair[1]));
+  const card = classBlock(subtree, 'lt-recipe');
+  if (!card) return undefined;
   const title = microdataItems(card, 'name')[0] ?? '';
   if (!title) return undefined;
   const imageTag = /<img\b[^>]*itemprop=["']image["'][^>]*>/i.exec(card)?.[0] ?? '';

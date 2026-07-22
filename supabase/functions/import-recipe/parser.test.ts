@@ -46,4 +46,14 @@ describe('parseRecipeHtml', () => {
   it('reports pages without a usable recipe', () => {
     expect(() => parseRecipeHtml('<p>Hello</p>', 'https://example.com')).toThrowError(RecipeParseError);
   });
+
+  it('rejects Sage-like markers split across unrelated elements', () => {
+    const html = `<div id="elara-recipe"></div><div class="lt-recipe"><h4 itemprop="name">Fake</h4></div><aside itemtype="http://schema.org/Recipe"></aside>`;
+    expect(() => parseRecipeHtml(html, 'https://sagebakes.com/not-a-recipe')).toThrowError(RecipeParseError);
+  });
+
+  it('rejects an unrelated Sage marker elsewhere on the page', () => {
+    const html = `<div id="elara-recipe"></div><main>unrelated content</main><div class="lt-recipe" id="lt-recipe" itemscope itemtype="http://schema.org/Recipe"><h4 itemprop="name">Fake</h4></div>`;
+    expect(() => parseRecipeHtml(html, 'https://sagebakes.com/not-a-recipe')).toThrowError(RecipeParseError);
+  });
 });
