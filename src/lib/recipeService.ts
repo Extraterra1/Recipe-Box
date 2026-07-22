@@ -127,11 +127,11 @@ export async function saveRecipe(cookbookId: string, recipe: Recipe): Promise<Re
 
   const supabase = await getSupabaseClient();
   if (supabase && hasSupabaseConfig && navigator.onLine) {
-    const { data, error } = await supabase
-      .from('recipes')
-      .upsert(toRecipeInsert(next, cookbookId), { onConflict: 'cookbook_id,title' })
-      .select('*')
-      .single();
+    const recipes = supabase.from('recipes');
+    const saveQuery = isRemoteRecipeId(next.id)
+      ? recipes.update(toRecipeInsert(next, cookbookId)).eq('id', next.id).eq('cookbook_id', cookbookId)
+      : recipes.upsert(toRecipeInsert(next, cookbookId), { onConflict: 'cookbook_id,title' });
+    const { data, error } = await saveQuery.select('*').single();
 
     if (error) {
       throw error;
@@ -164,4 +164,8 @@ function createInviteCode(): string {
     .join('')
     .slice(0, 8)
     .toUpperCase();
+}
+
+function isRemoteRecipeId(recipeId: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(recipeId);
 }

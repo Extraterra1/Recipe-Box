@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Session } from '@supabase/supabase-js';
-import { ensureCookbook, seedRecipesIfNeeded } from './recipeService';
+import { ensureCookbook, saveRecipe, seedRecipesIfNeeded } from './recipeService';
 import { getSupabaseClient } from './supabaseClient';
 import { getCachedRecipes } from './localDb';
 import type { Recipe } from './types';
@@ -94,5 +94,66 @@ describe('seedRecipesIfNeeded', () => {
 
     expect(from).toHaveBeenCalledWith('recipes');
     expect(upsert).toHaveBeenCalledOnce();
+  });
+});
+
+describe('saveRecipe', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('updates an existing remote recipe by id when its title changes', async () => {
+    const recipe: Recipe = {
+      id: '9a49f8dc-9662-44ee-9264-3198b9163db5',
+      cookbookId: 'cookbook-1',
+      title: 'Renamed pancakes',
+      imageUrl: '',
+      sourceLabel: '',
+      sourceUrl: '',
+      metadata: '',
+      ingredients: ['Flour'],
+      directions: [],
+      notes: [],
+      nutrition: [],
+      tags: [],
+      favorite: false,
+      createdAt: '2026-05-14T00:00:00.000Z',
+      updatedAt: '2026-05-14T00:00:00.000Z'
+    };
+    const single = vi.fn().mockResolvedValue({
+      data: {
+        id: recipe.id,
+        cookbook_id: 'cookbook-1',
+        title: recipe.title,
+        image_url: null,
+        source_label: null,
+        source_url: null,
+        metadata: null,
+        ingredients: recipe.ingredients,
+        directions: [],
+        notes: [],
+        nutrition: [],
+        tags: [],
+        favorite: false,
+        created_at: recipe.createdAt,
+        updated_at: '2026-07-22T12:00:00.000Z'
+      },
+      error: null
+    });
+    const select = vi.fn().mockReturnValue({ single });
+    const cookbookEq = vi.fn().mockReturnValue({ select });
+    const idEq = vi.fn().mockReturnValue({ eq: cookbookEq });
+    const update = vi.fn().mockReturnValue({ eq: idEq });
+    const from = vi.fn().mockReturnValue({ update });
+
+    vi.mocked(getSupabaseClient).mockResolvedValue({ from } as never);
+
+    const saved = await saveRecipe('cookbook-1', recipe);
+
+    expect(update).toHaveBeenCalledOnce();
+    expect(idEq).toHaveBeenCalledWith('id', recipe.id);
+    expect(cookbookEq).toHaveBeenCalledWith('cookbook_id', 'cookbook-1');
+    expect(saved.id).toBe(recipe.id);
+    expect(saved.title).toBe('Renamed pancakes');
   });
 });
