@@ -535,6 +535,46 @@ describe('Recipe Box app shell', () => {
     });
   });
 
+  it('switches mobile recipe tabs between all recipes and favorites and clears tag filters', async () => {
+    render(<App />);
+
+    const initialList = await screen.findByRole('list', { name: 'Recipes' });
+    const tabs = screen.getByRole('navigation', { name: 'Recipe views' });
+    const recipesTab = within(tabs).getByRole('button', { name: 'Recipes' });
+    const favoritesTab = within(tabs).getByRole('button', { name: 'Favorites' });
+
+    expect(recipesTab).toHaveAttribute('aria-current', 'page');
+    expect(favoritesTab).not.toHaveAttribute('aria-current');
+    expect(recipesTab.querySelector('svg')).toHaveAttribute('fill', 'currentColor');
+    expect(favoritesTab.querySelector('svg')).toHaveAttribute('fill', 'none');
+
+    await userEvent.click(within(initialList).getByRole('button', { name: /Open NYC Pizza/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+
+    const libraryNavigation = screen.getByRole('navigation', { name: 'Library navigation' });
+    await userEvent.click(within(libraryNavigation).getByRole('button', { name: /tag bread/i }));
+    await userEvent.click(favoritesTab);
+
+    const favoritesList = await screen.findByRole('list', { name: 'Recipes' });
+    expect(favoritesTab).toHaveAttribute('aria-current', 'page');
+    expect(favoritesTab.querySelector('svg')).toHaveAttribute('fill', 'currentColor');
+    expect(within(favoritesList).getByText('NYC Pizza')).toBeInTheDocument();
+    expect(within(favoritesList).queryByText('Baguette')).not.toBeInTheDocument();
+    expect(within(libraryNavigation).getByRole('button', { name: /tag bread/i })).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(recipesTab);
+
+    expect(recipesTab).toHaveAttribute('aria-current', 'page');
+    const restoredList = await screen.findByRole('list', { name: 'Recipes' });
+    expect(within(restoredList).getByText('Baguette')).toBeInTheDocument();
+
+    await userEvent.click(within(restoredList).getByRole('button', { name: /Open NYC Pizza/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Favorite' }));
+    await waitFor(() => {
+      expect(within(libraryNavigation).getByRole('button', { name: /Browse favorites, 0 recipes/i })).toBeInTheDocument();
+    });
+  });
+
   it('opens create, settings, and existing data management from library navigation', async () => {
     const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView');
     scrollIntoView.mockClear();
@@ -750,8 +790,9 @@ describe('Recipe Box app shell', () => {
     expect(within(pizzaList).queryByText('Breakfast Fruit Smoothie')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Favorites' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+    const reopenedSettings = screen.getByRole('region', { name: /Recipe Box/i });
+    await userEvent.click(within(reopenedSettings).getByRole('button', { name: 'Favorites' }));
+    await userEvent.click(within(reopenedSettings).getByRole('button', { name: 'Back to recipes' }));
 
     expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toBeInTheDocument();
     expect(screen.getByText('No recipes match your search or filters.')).toBeInTheDocument();

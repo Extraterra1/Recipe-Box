@@ -436,6 +436,12 @@ export default function App() {
     setView('collection');
   }
 
+  function showFavoriteRecipes() {
+    setFavoritesOnly(true);
+    setSelectedTags([]);
+    setView('collection');
+  }
+
   function rememberCollectionScroll() {
     if (recipeListRef.current) {
       collectionScrollTop.current = recipeListRef.current.scrollTop;
@@ -500,10 +506,7 @@ export default function App() {
           selectedTags={selectedTags}
           onHome={showAllRecipes}
           onAllRecipes={showAllRecipes}
-          onFavorites={() => {
-            setFavoritesOnly(true);
-            setView('collection');
-          }}
+          onFavorites={showFavoriteRecipes}
           onToggleTag={(tag) => {
             toggleTag(tag);
             setView('collection');
@@ -648,6 +651,12 @@ export default function App() {
         </section>
       </main>
 
+      <MobileRecipeTabs
+        favoritesOnly={favoritesOnly}
+        onRecipes={showAllRecipes}
+        onFavorites={showFavoriteRecipes}
+      />
+
       {addSurface !== 'closed' ? (
         <AddRecipeDialog
           surface={addSurface}
@@ -682,6 +691,29 @@ export default function App() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function MobileRecipeTabs({
+  favoritesOnly,
+  onRecipes,
+  onFavorites
+}: {
+  favoritesOnly: boolean;
+  onRecipes: () => void;
+  onFavorites: () => void;
+}) {
+  return (
+    <nav className="mobile-recipe-tabs" aria-label="Recipe views">
+      <button type="button" aria-current={!favoritesOnly ? 'page' : undefined} onClick={onRecipes}>
+        <BookOpen size={21} fill={!favoritesOnly ? 'currentColor' : 'none'} aria-hidden="true" />
+        <span>Recipes</span>
+      </button>
+      <button type="button" aria-current={favoritesOnly ? 'page' : undefined} onClick={onFavorites}>
+        <Heart size={21} fill={favoritesOnly ? 'currentColor' : 'none'} aria-hidden="true" />
+        <span>Favorites</span>
+      </button>
+    </nav>
   );
 }
 
