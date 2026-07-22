@@ -13,4 +13,5 @@ vite.config.js
 .env.local
 .env.*.local
 .vercel
+supabase/.temp/
 .worktrees/
