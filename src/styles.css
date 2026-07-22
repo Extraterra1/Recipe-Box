@@ -49,6 +49,8 @@ input, textarea { width: 100%; border: 1px solid var(--separator); border-radius
 input { min-height: 44px; padding: 0 12px; }
 textarea { min-height: 120px; padding: 11px 12px; resize: vertical; line-height: 1.45; }
 input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.search-wrap:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.search-wrap input:focus-visible { outline: none; }
 
 .icon-button, .button, .text-button, .chip, .tag { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 7px; border-radius: 9px; cursor: pointer; font-size: 15px; font-weight: 600; transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
 .icon-button { width: 44px; min-width: 44px; padding: 0; background: transparent; color: var(--text-secondary); }
@@ -284,7 +286,6 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     border-radius: 8px;
   }
 
-  .search-wrap:focus-within { border-color: color-mix(in oklch, var(--accent) 58%, var(--separator)); }
   .search-wrap input { min-height: 36px; font-size: 15px; }
 
   .recipe-index-utility {
