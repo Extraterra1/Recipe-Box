@@ -177,12 +177,12 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .url-import-form { display: grid; gap: 8px; }
 .url-import-form > label { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
 .url-import-error { color: var(--destructive); font-size: 13px; line-height: 1.4; }
+.url-import-progress { color: var(--text-secondary); font-size: 13px; line-height: 1.4; }
 
 @media (min-width: 760px) {
   .add-dialog-layer { align-items: center; padding: 28px; }
   .add-dialog { width: min(100%, 440px); padding: 22px; border-radius: 10px; }
   .add-dialog-heading { margin-bottom: 12px; }
-  .add-dialog-cancel { display: none; }
 }
 
 @media (hover: hover) {

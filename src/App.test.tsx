@@ -129,6 +129,61 @@ describe('Recipe Box app shell', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Pending Import' })).toBeInTheDocument();
   });
 
+  it('focuses each add surface and traps keyboard focus inside the dialog', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    expect(screen.getByRole('button', { name: 'Create manually' })).toHaveFocus();
+
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    cancel.focus();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Close add recipe menu' })).toHaveFocus();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    expect(screen.getByRole('textbox', { name: 'Recipe URL' })).toHaveFocus();
+    screen.getByRole('button', { name: 'Import recipe' }).focus();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Back to add options' })).toHaveFocus();
+  });
+
+  it('closes the add dialog with Escape and restores focus to its trigger', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    const trigger = screen.getByRole('button', { name: 'Add recipe' });
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: 'Add recipe' })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('announces pending imports and ignores Escape until the request settles', async () => {
+    let resolveImport!: (value: import('./lib/types').RecipeDraft) => void;
+    recipeImportMocks.importRecipe.mockReturnValue(new Promise((resolve) => { resolveImport = resolve; }));
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Recipe URL' }), 'https://example.com/pending');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Import from URL' });
+    expect(dialog).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent('Importing recipe');
+    await userEvent.keyboard('{Escape}');
+    expect(dialog).toBeInTheDocument();
+
+    resolveImport({
+      title: 'Settled Import', imageUrl: '', sourceLabel: '', sourceUrl: 'https://example.com/pending',
+      metadata: '', ingredients: [], directions: [], notes: [], nutrition: [], tags: [], favorite: false
+    });
+    expect(await screen.findByRole('heading', { name: 'Edit Settled Import' })).toBeInTheDocument();
+  });
+
   it('retains the URL and shows the import error when an import fails', async () => {
     recipeImportMocks.importRecipe.mockRejectedValue(new Error('The recipe page could not be reached. Try again.'));
     render(<App />);

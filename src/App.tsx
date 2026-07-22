@@ -19,7 +19,7 @@ import {
   Upload,
   X
 } from 'lucide-react';
-import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
@@ -119,6 +119,7 @@ export default function App() {
   const collectionWindowScrollTop = useRef(0);
   const preserveSelectionOnSettingsReturn = useRef(false);
   const detailFilterSnapshot = useRef<{ selectedTags: string[]; favoritesOnly: boolean } | null>(null);
+  const addTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     void bootstrap();
@@ -365,14 +366,20 @@ export default function App() {
   }
 
   function openAddMenu() {
+    addTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setRecipeUrlError('');
     setAddSurface('choices');
+  }
+
+  function restoreAddTriggerFocus() {
+    queueMicrotask(() => addTriggerRef.current?.focus());
   }
 
   function closeAddMenu() {
     if (isImportingRecipe) return;
     setRecipeUrlError('');
     setAddSurface('closed');
+    restoreAddTriggerFocus();
   }
 
   function backToAddChoices() {
@@ -703,11 +710,50 @@ function AddRecipeDialog({
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const target = surface === 'choices'
+      ? dialogRef.current?.querySelector<HTMLElement>('.add-choice:not(:disabled)')
+      : dialogRef.current?.querySelector<HTMLElement>('#recipe-import-url');
+    target?.focus();
+  }, [surface]);
+
+  function handleDialogKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onCancel();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]'
+    ) ?? []);
+    if (!focusable.length) return;
+    const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+    const nextIndex = event.shiftKey
+      ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
+      : (currentIndex === focusable.length - 1 ? 0 : currentIndex + 1);
+    if ((event.shiftKey && currentIndex <= 0) || (!event.shiftKey && currentIndex === focusable.length - 1) || currentIndex === -1) {
+      event.preventDefault();
+      focusable[nextIndex]?.focus();
+    }
+  }
+
   return (
     <div className="add-dialog-layer" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onCancel();
     }}>
-      <section className="add-dialog" role="dialog" aria-modal="true" aria-labelledby="add-dialog-title">
+      <section
+        ref={dialogRef}
+        className="add-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-dialog-title"
+        aria-busy={isImporting}
+        onKeyDown={handleDialogKeyDown}
+      >
         {surface === 'choices' ? (
           <>
             <div className="add-dialog-heading">
@@ -752,6 +798,7 @@ function AddRecipeDialog({
                 autoFocus
               />
               {error ? <p id="recipe-import-error" className="url-import-error" role="alert">{error}</p> : null}
+              {isImporting ? <p className="url-import-progress" role="status" aria-live="polite">Importing recipe...</p> : null}
               <div className="form-actions">
                 <button type="button" className="button" onClick={onCancel} disabled={isImporting}>Cancel</button>
                 <button type="submit" className="button primary" disabled={isImporting || !recipeUrl.trim()} aria-label={isImporting ? 'Importing recipe' : 'Import recipe'}>
