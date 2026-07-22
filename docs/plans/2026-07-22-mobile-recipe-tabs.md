@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add a fixed mobile bottom tab bar that switches between all recipes and favorites.
+**Goal:** Add a floating Liquid Glass-inspired mobile bottom tab bar that switches between all recipes and favorites.
 
 **Architecture:** Reuse the existing `favoritesOnly` collection filter as the single source of truth. Render a small mobile-only navigation component from `App`, and route both tab actions through the existing collection-navigation callbacks so tags, view state, and recipe filtering remain consistent.
 
@@ -33,11 +33,11 @@ Expected: FAIL because the `Recipe views` navigation does not exist.
 
 **Step 1: Write the minimal component**
 
-Add `MobileRecipeTabs` with Recipes and Favorites buttons. Render it from `App`, bind the selected state to `favoritesOnly`, route Recipes through `showAllRecipes`, and make Favorites clear tags, enable the favorites filter, and return to the collection.
+Add `MobileRecipeTabs` with Recipes and Favorites buttons. Render it from `App`, bind the selected state to `favoritesOnly`, route Recipes through `showAllRecipes`, and make Favorites clear tags, enable the favorites filter, and return to the collection. Use filled variants of the existing symbols for the selected item.
 
 **Step 2: Add responsive styling**
 
-Hide the component by default. Below 760px, fix it to the bottom edge, split buttons evenly, respect `env(safe-area-inset-bottom)`, and add matching bottom space to visible app surfaces. Use existing design tokens for all colors and separators.
+Hide the component by default. Below 760px, float an inset capsule above the bottom safe area, split buttons evenly, and add matching bottom space to visible app surfaces. Use a translucent warm material with backdrop blur, saturation, an inner highlight, and restrained shadow; use an opaque fallback under `prefers-reduced-transparency`.
 
 **Step 3: Run the focused test to verify it passes**
 

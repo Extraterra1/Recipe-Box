@@ -15,7 +15,9 @@ Add a fixed bottom tab bar on screens below 760px with exactly two destinations:
 
 ## Presentation
 
-The bar is fixed to the bottom of the mobile viewport and contains two equal-width icon-and-label buttons. It uses the existing warm canvas, separator, muted text, and deep food-red active color. It respects the device safe area, and the mobile collection and detail surfaces receive enough bottom inset that content is never obscured.
+The bar is a unified floating capsule inset from the mobile viewport edges and bottom safe area. It contains two equal-width icon-and-label buttons on a regular Liquid Glass-inspired material: translucent warm tint, backdrop blur and saturation, a fine inner highlight, and restrained layered shadow. Content remains visible beneath the material, while the app shell reserves enough bottom space that the final recipe stays reachable.
+
+The selected item uses the existing deep food-red tint with a subtle translucent lens and a filled icon. The unselected item remains muted. The control has no full-width background or hard edge divider. When reduced transparency is requested, the bar becomes an opaque warm surface; reduced motion continues to suppress transitions.
 
 ## Accessibility
 
