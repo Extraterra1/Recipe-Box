@@ -11,6 +11,11 @@ const recipeImportMocks = vi.hoisted(() => ({
   importRecipe: vi.fn()
 }));
 
+vi.mock('./lib/supabaseClient', () => ({
+  hasSupabaseConfig: false,
+  getSupabaseClient: vi.fn(async () => null)
+}));
+
 vi.mock('./lib/recipeImport', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./lib/recipeImport')>();
   return {
