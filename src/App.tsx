@@ -13,13 +13,14 @@ import {
   Plus,
   RefreshCcw,
   Search,
-  Send,
   Settings,
   Trash2,
   Upload,
   X
 } from 'lucide-react';
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { AuthScreen } from './AuthScreen';
 import { seedRecipes } from './data/seedRecipes';
 import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
@@ -31,15 +32,23 @@ import {
 } from './lib/recipeImport';
 import {
   ensureCookbook,
-  getSession,
   joinCookbookByInvite,
   loadRecipes,
   removeRecipe,
   saveRecipe,
-  seedRecipesIfNeeded,
-  signInWithMagicLink,
-  signOut
+  seedRecipesIfNeeded
 } from './lib/recipeService';
+import {
+  getLinkedProviders,
+  getSession,
+  requestPasswordReset,
+  signInWithGoogle,
+  signInWithPassword,
+  signOut,
+  signUpWithPassword,
+  subscribeToAuthChanges,
+  updatePassword
+} from './lib/authService';
 import { hasSupabaseConfig } from './lib/supabaseClient';
 import type { Cookbook, Recipe, SyncState } from './lib/types';
 
@@ -90,6 +99,9 @@ function createLocalRecipeId() {
 }
 
 export default function App() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
+  const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [query, setQuery] = useState('');
@@ -109,7 +121,6 @@ export default function App() {
   const [recipeUrl, setRecipeUrl] = useState('');
   const [recipeUrlError, setRecipeUrlError] = useState('');
   const [isImportingRecipe, setIsImportingRecipe] = useState(false);
-  const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
   const [ingredientChecks, setIngredientChecks] = useState<IngredientChecks>(() => loadIngredientChecks());
@@ -122,8 +133,41 @@ export default function App() {
   const addTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    void bootstrap();
+    let active = true;
+    let unsubscribe: () => void = () => undefined;
+
+    void subscribeToAuthChanges((event, nextSession) => {
+      if (!active) return;
+      if (event === 'PASSWORD_RECOVERY') setIsRecoveringPassword(true);
+      if (event === 'SIGNED_OUT') {
+        resetAuthenticatedState();
+        setSession(null);
+        return;
+      }
+      setSession(nextSession);
+    }).then((stop) => {
+      unsubscribe = stop;
+    }).catch(() => {
+      if (active) setSession(null);
+    });
+
+    void getSession().then((savedSession) => {
+      if (active) setSession(savedSession);
+    }).catch(() => {
+      if (active) setSession(null);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    void bootstrap(session);
+    void getLinkedProviders().then(setLinkedProviders).catch(() => setLinkedProviders([]));
+  }, [session?.user.id]);
 
   useEffect(() => {
     saveIngredientChecks(ingredientChecks);
@@ -182,11 +226,11 @@ export default function App() {
     }
   }, [filteredRecipes, selectedId, view]);
 
-  async function bootstrap() {
+  async function bootstrap(activeSession: Session) {
+    setIsBootstrapping(true);
     setSyncState(navigator.onLine ? 'syncing' : 'offline');
     try {
-      const session = await getSession();
-      const activeCookbook = await ensureCookbook(session);
+      const activeCookbook = await ensureCookbook(activeSession);
       setCookbook(activeCookbook);
       const seeded = await seedRecipesIfNeeded(activeCookbook.id, seedRecipes);
       const loaded = await loadRecipes(activeCookbook.id);
@@ -203,6 +247,19 @@ export default function App() {
     } finally {
       setIsBootstrapping(false);
     }
+  }
+
+  function resetAuthenticatedState() {
+    setRecipes([]);
+    setSelectedId('');
+    setCookbook(null);
+    setLinkedProviders([]);
+    setSyncState('idle');
+    setStatusMessage('Getting the recipe drawer ready...');
+    setView('collection');
+    setEditingRecipe(null);
+    setAddSurface('closed');
+    setIsBootstrapping(false);
   }
 
   async function refreshRecipes() {
@@ -222,23 +279,6 @@ export default function App() {
     }
   }
 
-  async function submitMagicLink(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!authEmail) {
-      return;
-    }
-
-    setSyncState('syncing');
-    try {
-      await signInWithMagicLink(authEmail);
-      setSyncState('success');
-      setStatusMessage('Check your email for the sign-in link.');
-    } catch (error) {
-      setSyncState('error');
-      setStatusMessage(getErrorMessage(error));
-    }
-  }
-
   async function submitInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!inviteCode) {
@@ -246,7 +286,7 @@ export default function App() {
     }
 
     try {
-      const session = await getSession();
+      if (!session) throw new Error('Sign in before joining a household.');
       const joined = await joinCookbookByInvite(session, inviteCode);
       setCookbook(joined);
       const loaded = await loadRecipes(joined.id);
@@ -456,6 +496,44 @@ export default function App() {
     await persistRecipe({ ...parsed, id: createLocalRecipeId() });
   }
 
+  async function handleSignOut() {
+    try {
+      await signOut();
+      resetAuthenticatedState();
+      setSession(null);
+    } catch (error) {
+      setSyncState('error');
+      setStatusMessage(getErrorMessage(error));
+    }
+  }
+
+  if (session === undefined) {
+    return (
+      <main className="auth-shell auth-checking" aria-busy="true">
+        <div className="auth-brand" aria-label="Recipe Box">
+          <span className="auth-brand-mark" aria-hidden="true"><Archive size={25} /></span>
+          <span>Recipe Box</span>
+        </div>
+        <p role="status">Opening your cookbook…</p>
+      </main>
+    );
+  }
+
+  if (!session || isRecoveringPassword) {
+    return (
+      <AuthScreen
+        configured={hasSupabaseConfig}
+        recovery={isRecoveringPassword}
+        onSignIn={signInWithPassword}
+        onSignUp={signUpWithPassword}
+        onGoogle={signInWithGoogle}
+        onRecover={requestPasswordReset}
+        onUpdatePassword={updatePassword}
+        onRecoveryComplete={() => setIsRecoveringPassword(false)}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       {view === 'detail' && selectedRecipe ? (
@@ -582,7 +660,8 @@ export default function App() {
           {view === 'settings' ? (
             <SettingsPanel
               cookbook={cookbook}
-              authEmail={authEmail}
+              accountEmail={session.user.email ?? ''}
+              linkedProviders={linkedProviders}
               inviteCode={inviteCode}
               recipes={recipes}
               syncState={syncState}
@@ -591,15 +670,17 @@ export default function App() {
               selectedTags={selectedTags}
               favoritesOnly={favoritesOnly}
               initialSection={settingsTarget}
-              onAuthEmailChange={setAuthEmail}
               onInviteCodeChange={setInviteCode}
-              onMagicLink={submitMagicLink}
               onInvite={submitInvite}
               onImportMarkdown={(value) => void importMarkdown(value)}
               onRefresh={() => void refreshRecipes()}
               onToggleTag={toggleTag}
               onToggleFavorites={() => setFavoritesOnly((value) => !value)}
-              onSignOut={() => void signOut()}
+              onUpdatePassword={async (password) => {
+                await updatePassword(password);
+                setLinkedProviders(await getLinkedProviders());
+              }}
+              onSignOut={() => void handleSignOut()}
               backLabel={settingsReturnView === 'detail' ? 'Back to recipe' : settingsReturnView === 'editor' ? 'Back to editor' : 'Back to recipes'}
               onBack={() => {
                 if (settingsReturnView === 'detail' && detailFilterSnapshot.current) {
@@ -1475,7 +1556,8 @@ function RecipeEditor({
 
 function SettingsPanel({
   cookbook,
-  authEmail,
+  accountEmail,
+  linkedProviders,
   inviteCode,
   recipes,
   syncState,
@@ -1484,20 +1566,20 @@ function SettingsPanel({
   selectedTags,
   favoritesOnly,
   initialSection,
-  onAuthEmailChange,
   onInviteCodeChange,
-  onMagicLink,
   onInvite,
   onImportMarkdown,
   onRefresh,
   onToggleTag,
   onToggleFavorites,
+  onUpdatePassword,
   onSignOut,
   backLabel,
   onBack
 }: {
   cookbook: Cookbook | null;
-  authEmail: string;
+  accountEmail: string;
+  linkedProviders: string[];
   inviteCode: string;
   recipes: Recipe[];
   syncState: SyncState;
@@ -1506,19 +1588,22 @@ function SettingsPanel({
   selectedTags: string[];
   favoritesOnly: boolean;
   initialSection: 'overview' | 'data';
-  onAuthEmailChange: (value: string) => void;
   onInviteCodeChange: (value: string) => void;
-  onMagicLink: (event: FormEvent<HTMLFormElement>) => void;
   onInvite: (event: FormEvent<HTMLFormElement>) => void;
   onImportMarkdown: (markdown: string) => void;
   onRefresh: () => void;
   onToggleTag: (tag: string) => void;
   onToggleFavorites: () => void;
+  onUpdatePassword: (password: string) => Promise<void>;
   onSignOut: () => void;
   backLabel: string;
   onBack: () => void;
 }) {
   const [markdown, setMarkdown] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountPasswordConfirmation, setAccountPasswordConfirmation] = useState('');
+  const [accountMessage, setAccountMessage] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const cloudReady = hasSupabaseConfig;
   const overviewRef = useRef<HTMLElement | null>(null);
   const dataSectionRef = useRef<HTMLDivElement | null>(null);
@@ -1578,29 +1663,59 @@ function SettingsPanel({
           </button>
         </section>
 
-        <section className="settings-section">
-          <h3>Supabase</h3>
-          {hasSupabaseConfig ? (
-            <p className="settings-copy">Connected with browser-safe credentials.</p>
-          ) : (
-            <p className="settings-copy">Add Supabase values in `.env.local`, then restart the app to turn on cloud sync.</p>
-          )}
-          <form onSubmit={onMagicLink} className="compact-form">
+        <section className="settings-section account-section">
+          <h3>Account</h3>
+          <p className="account-email">{accountEmail}</p>
+          <div className="provider-list" aria-label="Linked sign-in methods">
+            {(linkedProviders.length ? linkedProviders : ['email']).map((provider) => (
+              <span className="provider-label" key={provider}>{provider === 'google' ? 'Google' : 'Email'}</span>
+            ))}
+          </div>
+          <form
+            className="compact-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setAccountMessage('');
+              if (accountPassword !== accountPasswordConfirmation) {
+                setAccountMessage('Passwords do not match.');
+                return;
+              }
+              setIsUpdatingPassword(true);
+              void onUpdatePassword(accountPassword).then(() => {
+                setAccountPassword('');
+                setAccountPasswordConfirmation('');
+                setAccountMessage('Password updated.');
+              }).catch((error) => setAccountMessage(getErrorMessage(error))).finally(() => setIsUpdatingPassword(false));
+            }}
+          >
             <label>
-              Email
+              New account password
               <input
-                type="email"
-                value={authEmail}
-                onChange={(event) => onAuthEmailChange(event.target.value)}
-                placeholder="cook@example.com"
-                disabled={!cloudReady}
+                type="password"
+                minLength={6}
+                autoComplete="new-password"
+                value={accountPassword}
+                onChange={(event) => setAccountPassword(event.target.value)}
+                required
               />
             </label>
-            <button type="submit" className="button primary" disabled={!cloudReady}>
-              <Send size={16} /> Send magic link
+            <label>
+              Confirm account password
+              <input
+                type="password"
+                minLength={6}
+                autoComplete="new-password"
+                value={accountPasswordConfirmation}
+                onChange={(event) => setAccountPasswordConfirmation(event.target.value)}
+                required
+              />
+            </label>
+            {accountMessage ? <p className="settings-copy" role="status">{accountMessage}</p> : null}
+            <button type="submit" className="button primary" disabled={isUpdatingPassword}>
+              {isUpdatingPassword ? 'Updating…' : 'Update password'}
             </button>
           </form>
-          <button type="button" className="button subtle" onClick={onSignOut} disabled={!cloudReady}>
+          <button type="button" className="button subtle" onClick={onSignOut}>
             <LogOut size={16} /> Sign out
           </button>
         </section>

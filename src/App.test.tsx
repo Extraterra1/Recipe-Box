@@ -1,15 +1,53 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App, { RecipeList, RecipeThumbnail, sortRecipes } from './App';
 import { seedRecipes } from './data/seedRecipes';
 import type { Recipe } from './lib/types';
+import type { Session } from '@supabase/supabase-js';
 
 const recipeImportMocks = vi.hoisted(() => ({
   getAvailability: vi.fn<() => import('./lib/recipeImport').RecipeImportAvailability>(() => ({ available: true })),
   importRecipe: vi.fn()
 }));
+
+const authMocks = vi.hoisted(() => ({
+  getSession: vi.fn(),
+  subscribe: vi.fn(),
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  google: vi.fn(),
+  recover: vi.fn(),
+  updatePassword: vi.fn(),
+  providers: vi.fn(),
+  signOut: vi.fn()
+}));
+
+vi.mock('./lib/authService', () => ({
+  getSession: authMocks.getSession,
+  subscribeToAuthChanges: authMocks.subscribe,
+  signInWithPassword: authMocks.signIn,
+  signUpWithPassword: authMocks.signUp,
+  signInWithGoogle: authMocks.google,
+  requestPasswordReset: authMocks.recover,
+  updatePassword: authMocks.updatePassword,
+  getLinkedProviders: authMocks.providers,
+  signOut: authMocks.signOut
+}));
+
+vi.mock('./lib/recipeService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./lib/recipeService')>();
+  return {
+    ...actual,
+    ensureCookbook: vi.fn(async () => ({
+      id: 'cookbook-1',
+      name: 'Household Recipe Box',
+      inviteCode: 'ABC12345',
+      role: 'owner' as const
+    }))
+  };
+});
 
 vi.mock('./lib/supabaseClient', () => ({
   hasSupabaseConfig: false,
@@ -51,6 +89,54 @@ describe('Recipe Box app shell', () => {
   beforeEach(() => {
     recipeImportMocks.getAvailability.mockReturnValue({ available: true });
     recipeImportMocks.importRecipe.mockReset();
+    authMocks.getSession.mockReset();
+    authMocks.getSession.mockResolvedValue({ user: { id: 'user-1', email: 'cook@example.com' } } as Session);
+    authMocks.subscribe.mockReset();
+    authMocks.subscribe.mockResolvedValue(() => undefined);
+    authMocks.providers.mockResolvedValue(['email']);
+    authMocks.signIn.mockResolvedValue(undefined);
+    authMocks.signUp.mockResolvedValue(undefined);
+    authMocks.google.mockResolvedValue(undefined);
+    authMocks.recover.mockResolvedValue(undefined);
+    authMocks.updatePassword.mockResolvedValue(undefined);
+    authMocks.signOut.mockResolvedValue(undefined);
+  });
+
+  it('shows only the login page and no recipes without a session', async () => {
+    authMocks.getSession.mockResolvedValue(null);
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add recipe' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open household settings' })).not.toBeInTheDocument();
+  });
+
+  it('opens the focused password form for a recovery auth event', async () => {
+    let listener!: (event: string, session: Session | null) => void;
+    authMocks.subscribe.mockImplementation(async (callback) => {
+      listener = callback;
+      return () => undefined;
+    });
+    const session = { user: { id: 'user-1', email: 'cook@example.com' } } as Session;
+    render(<App />);
+    await screen.findByRole('list', { name: 'Recipes' });
+
+    act(() => listener('PASSWORD_RECOVERY', session));
+
+    expect(screen.getByRole('heading', { name: 'Choose a new password' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
+  });
+
+  it('clears the cookbook and returns to login after signing out', async () => {
+    render(<App />);
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    expect(authMocks.signOut).toHaveBeenCalledOnce();
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Recipes' })).not.toBeInTheDocument();
   });
 
   it('offers manual creation and URL import from the shared add menu', async () => {
@@ -253,15 +339,13 @@ describe('Recipe Box app shell', () => {
     expect(importButton).toBeDisabled();
     expect(screen.getByText('Connect to the internet to import a recipe.')).toBeInTheDocument();
   });
-  it('shows stable navigation counts and preview skeletons during bootstrap', () => {
+  it('shows a branded auth check while restoring the saved session', () => {
+    authMocks.getSession.mockReturnValue(new Promise(() => undefined));
     render(<App />);
 
-    const navigation = screen.getByRole('navigation', { name: 'Library navigation' });
-    expect(within(navigation).queryByText(/^0$/)).not.toBeInTheDocument();
-    expect(within(navigation).getAllByTestId('navigation-count-skeleton')).toHaveLength(2);
-    const preview = screen.getByRole('region', { name: 'Recipe preview' });
-    expect(preview).toHaveAttribute('aria-busy', 'true');
-    expect(within(preview).getByTestId('recipe-preview-skeleton')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Opening your cookbook');
+    expect(screen.queryByRole('navigation', { name: 'Library navigation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Welcome back' })).not.toBeInTheDocument();
   });
   it('exposes library, index, and preview as persistent desktop workspace regions', async () => {
     const { container } = render(<App />);
@@ -767,7 +851,7 @@ describe('Recipe Box app shell', () => {
   it('keeps utility actions quiet in the header and recipe filters available in settings', async () => {
     render(<App />);
 
-    const header = screen.getByRole('banner');
+    const header = await screen.findByRole('banner');
     expect(within(header).getByRole('button', { name: 'Add recipe' })).toBeInTheDocument();
     const settingsButton = within(header).getByRole('button', { name: 'Open household settings' });
     expect(within(header).queryByText(/Offline ready/i)).not.toBeInTheDocument();
@@ -1054,16 +1138,20 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('tab', { name: 'Ingredients' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('keeps unavailable cloud actions disabled in local mode', async () => {
+  it('moves login out of settings and lets the signed-in account change its password', async () => {
     render(<App />);
 
+    await screen.findByRole('list', { name: 'Recipes' });
     await userEvent.click(screen.getByLabelText(/Open household settings/i));
 
-    expect(await screen.findByText(/Offline ready/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Send magic link/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Join household/i })).toBeDisabled();
-    expect(screen.getByLabelText(/Email/i)).toBeDisabled();
-    expect(screen.getByLabelText(/Join code/i)).toBeDisabled();
+    expect(screen.getByRole('heading', { name: 'Account' })).toBeInTheDocument();
+    expect(screen.getByText('cook@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Email')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Send magic link/i })).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('New account password'), 'new-secret12');
+    await userEvent.type(screen.getByLabelText('Confirm account password'), 'new-secret12');
+    await userEvent.click(screen.getByRole('button', { name: 'Update password' }));
+    expect(authMocks.updatePassword).toHaveBeenCalledWith('new-secret12');
   });
 
   it('asks for confirmation before deleting a recipe', async () => {

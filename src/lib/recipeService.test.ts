@@ -54,6 +54,11 @@ describe('ensureCookbook', () => {
       role: 'owner'
     });
   });
+
+  it('requires an authenticated session instead of creating a local cookbook', async () => {
+    await expect(ensureCookbook(null as never)).rejects.toThrow('Sign in before opening a household');
+    expect(getSupabaseClient).not.toHaveBeenCalled();
+  });
 });
 
 describe('seedRecipesIfNeeded', () => {

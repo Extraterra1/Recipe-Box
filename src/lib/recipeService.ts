@@ -4,8 +4,6 @@ import { fromRecipeRow, toRecipeInsert, type RecipeRow } from './supabaseMapping
 import type { Cookbook, Recipe } from './types';
 import { getSupabaseClient, hasSupabaseConfig } from './supabaseClient';
 
-const LOCAL_COOKBOOK_ID = 'local-household';
-
 type JoinCookbookResult = {
   id: string;
   name: string;
@@ -13,53 +11,13 @@ type JoinCookbookResult = {
   role: 'owner' | 'editor';
 };
 
-export async function getSession(): Promise<Session | null> {
+export async function ensureCookbook(session: Session): Promise<Cookbook> {
+  if (!session) {
+    throw new Error('Sign in before opening a household.');
+  }
   const supabase = await getSupabaseClient();
   if (!supabase) {
-    return null;
-  }
-
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
-  }
-  return data.session;
-}
-
-export async function signInWithMagicLink(email: string): Promise<void> {
-  const supabase = await getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.');
-  }
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: window.location.origin
-    }
-  });
-
-  if (error) {
-    throw error;
-  }
-}
-
-export async function signOut(): Promise<void> {
-  const supabase = await getSupabaseClient();
-  if (!supabase) {
-    return;
-  }
-
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    throw error;
-  }
-}
-
-export async function ensureCookbook(session: Session | null): Promise<Cookbook> {
-  const supabase = await getSupabaseClient();
-  if (!supabase || !session) {
-    return { id: LOCAL_COOKBOOK_ID, name: 'Household Recipe Box', role: 'owner', inviteCode: 'LOCAL' };
+    throw new Error('Supabase is not configured.');
   }
 
   const { data: membership, error: membershipError } = await supabase
@@ -149,7 +107,7 @@ export async function seedRecipesIfNeeded(cookbookId: string, recipes: Recipe[])
   }
 
   const supabase = await getSupabaseClient();
-  if (supabase && hasSupabaseConfig && navigator.onLine && cookbookId !== LOCAL_COOKBOOK_ID) {
+  if (supabase && hasSupabaseConfig && navigator.onLine) {
     const inserts = seeded.map((recipe) => toRecipeInsert(recipe, cookbookId));
     const { error } = await supabase.from('recipes').upsert(inserts, { onConflict: 'cookbook_id,title' });
     if (error) {
@@ -168,7 +126,7 @@ export async function saveRecipe(cookbookId: string, recipe: Recipe): Promise<Re
   };
 
   const supabase = await getSupabaseClient();
-  if (supabase && hasSupabaseConfig && navigator.onLine && cookbookId !== LOCAL_COOKBOOK_ID) {
+  if (supabase && hasSupabaseConfig && navigator.onLine) {
     const { data, error } = await supabase
       .from('recipes')
       .upsert(toRecipeInsert(next, cookbookId), { onConflict: 'cookbook_id,title' })
@@ -190,7 +148,7 @@ export async function saveRecipe(cookbookId: string, recipe: Recipe): Promise<Re
 
 export async function removeRecipe(cookbookId: string, recipeId: string): Promise<void> {
   const supabase = await getSupabaseClient();
-  if (supabase && hasSupabaseConfig && navigator.onLine && cookbookId !== LOCAL_COOKBOOK_ID) {
+  if (supabase && hasSupabaseConfig && navigator.onLine) {
     const { error } = await supabase.from('recipes').delete().eq('id', recipeId).eq('cookbook_id', cookbookId);
     if (error) {
       throw error;

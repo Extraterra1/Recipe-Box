@@ -4,6 +4,15 @@ import { describe, expect, it } from 'vitest';
 
 const styles = readFileSync(join(process.cwd(), 'src/styles.css'), 'utf8');
 
+describe('standalone authentication', () => {
+  it('uses a full-height focused auth surface without decorative gradients', () => {
+    expect(styles).toMatch(/\.auth-shell\s*\{[^}]*min-height:\s*100dvh;[^}]*display:\s*grid;/s);
+    expect(styles).toMatch(/\.auth-surface\s*\{[^}]*width:\s*min\(100%, 420px\);/s);
+    expect(styles).toMatch(/\.auth-google\s*\{[^}]*width:\s*100%;/s);
+    expect(styles).not.toMatch(/\.auth-[^{]*\{[^}]*gradient\(/s);
+  });
+});
+
 describe('search focus styling', () => {
   it('draws one aligned focus indicator on the search container', () => {
     expect(styles).toMatch(
