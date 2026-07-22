@@ -88,6 +88,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .detail-actions { flex-wrap: wrap; }
 .inline-warning { max-width: 72ch; margin: -8px 0 20px; padding: 12px; border: 1px solid color-mix(in oklch, var(--destructive) 28%, var(--separator)); border-radius: 8px; color: var(--destructive); font-size: 15px; line-height: 1.4; }
 .source-link { display: inline-flex; margin-bottom: 22px; font-size: 15px; font-weight: 600; }
+.recipe-panel-toggle { display: none; }
 .recipe-columns { display: grid; gap: 28px; }
 .ingredient-panel, .direction-panel, .detail-notes section, .settings-section { min-width: 0; }
 .ingredient-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--separator); }
@@ -457,6 +458,30 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
   .app-view-detail .wide-collection-context { display: none; }
   .recipe-rail[data-mobile-state="inactive"] { display: none; }
   .desktop-preview-pane[data-mobile-state="inactive"] { display: none; }
+  .recipe-panel-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+    margin-bottom: 22px;
+    padding: 3px;
+    border: 1px solid var(--separator);
+    border-radius: 999px;
+    background: var(--search-surface);
+  }
+  .recipe-panel-toggle button {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 180ms var(--ease-out);
+  }
+  .recipe-panel-toggle button[aria-selected="true"] { background: var(--accent); color: var(--canvas); }
+  .recipe-panel-toggle button:active { transform: scale(.985); }
+  .recipe-reading-panel[data-active="false"] { display: none; }
   .detail-actions, .form-actions, .button-row { align-items: stretch; }
   .detail-actions .button, .form-actions .button, .button-row .button { flex: 1; }
 }

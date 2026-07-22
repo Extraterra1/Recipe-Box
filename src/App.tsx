@@ -1079,8 +1079,38 @@ function RecipeDetail({
   onResetIngredients: () => void;
   deleteNeedsConfirmation: boolean;
 }) {
+  const [activeRecipePanel, setActiveRecipePanel] = useState<'ingredients' | 'directions'>('ingredients');
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const checkedIngredients = new Set(checkedIngredientIndexes);
   const appliedCount = recipe.ingredients.filter((_, index) => checkedIngredients.has(index)).length;
+
+  useEffect(() => {
+    setActiveRecipePanel('ingredients');
+    swipeStart.current = null;
+  }, [recipe.id]);
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    const touch = event.touches[0];
+    swipeStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    const start = swipeStart.current;
+    const touch = event.changedTouches[0];
+    swipeStart.current = null;
+
+    if (!start || !touch) {
+      return;
+    }
+
+    const horizontalTravel = touch.clientX - start.x;
+    const verticalTravel = touch.clientY - start.y;
+    if (Math.abs(horizontalTravel) < 50 || Math.abs(horizontalTravel) <= Math.abs(verticalTravel)) {
+      return;
+    }
+
+    setActiveRecipePanel(horizontalTravel < 0 ? 'directions' : 'ingredients');
+  }
 
   return (
     <article className="recipe-detail active-surface" id="recipe-detail">
@@ -1129,8 +1159,42 @@ function RecipeDetail({
         </a>
       ) : recipe.sourceLabel ? <p className="source-context">Source: {recipe.sourceLabel}</p> : null}
 
-      <div className="recipe-columns">
-        <section className="ingredient-panel" aria-labelledby="ingredients-heading">
+      <div className="recipe-panel-toggle" role="tablist" aria-label="Recipe content">
+        <button
+          type="button"
+          id="ingredients-tab"
+          role="tab"
+          aria-selected={activeRecipePanel === 'ingredients'}
+          aria-controls="ingredients-panel"
+          onClick={() => setActiveRecipePanel('ingredients')}
+        >
+          Ingredients
+        </button>
+        <button
+          type="button"
+          id="directions-tab"
+          role="tab"
+          aria-selected={activeRecipePanel === 'directions'}
+          aria-controls="directions-panel"
+          onClick={() => setActiveRecipePanel('directions')}
+        >
+          Directions
+        </button>
+      </div>
+
+      <div
+        className="recipe-columns recipe-reading-panels"
+        data-testid="recipe-reading-panels"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <section
+          id="ingredients-panel"
+          className="ingredient-panel recipe-reading-panel"
+          role="tabpanel"
+          aria-labelledby="ingredients-heading"
+          data-active={activeRecipePanel === 'ingredients'}
+        >
           <div className="ingredient-panel-head">
             <div>
               <h3 id="ingredients-heading">Ingredients</h3>
@@ -1169,7 +1233,13 @@ function RecipeDetail({
           )}
         </section>
 
-        <section className="direction-panel" aria-labelledby="directions-heading">
+        <section
+          id="directions-panel"
+          className="direction-panel recipe-reading-panel"
+          role="tabpanel"
+          aria-labelledby="directions-heading"
+          data-active={activeRecipePanel === 'directions'}
+        >
           <h3 id="directions-heading">Directions</h3>
           {recipe.directions.length ? (
             <ol>

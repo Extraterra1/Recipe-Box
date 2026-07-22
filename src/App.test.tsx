@@ -959,6 +959,58 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByText(/1 of 45 applied/i)).toBeInTheDocument();
   });
 
+  it('opens mobile recipe content on ingredients and switches with the pill toggle', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+
+    const ingredientsTab = screen.getByRole('tab', { name: 'Ingredients' });
+    const directionsTab = screen.getByRole('tab', { name: 'Directions' });
+    expect(ingredientsTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel', { name: 'Ingredients' })).toHaveAttribute('data-active', 'true');
+
+    await userEvent.click(directionsTab);
+
+    expect(directionsTab).toHaveAttribute('aria-selected', 'true');
+    expect(ingredientsTab).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tabpanel', { name: 'Directions' })).toHaveAttribute('data-active', 'true');
+  });
+
+  it('switches mobile recipe panels with deliberate horizontal swipes', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    const panels = screen.getByTestId('recipe-reading-panels');
+
+    fireEvent.touchStart(panels, { touches: [{ clientX: 180, clientY: 100 }] });
+    fireEvent.touchEnd(panels, { changedTouches: [{ clientX: 90, clientY: 108 }] });
+    expect(screen.getByRole('tab', { name: 'Directions' })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.touchStart(panels, { touches: [{ clientX: 90, clientY: 100 }] });
+    fireEvent.touchEnd(panels, { changedTouches: [{ clientX: 145, clientY: 106 }] });
+    expect(screen.getByRole('tab', { name: 'Ingredients' })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.touchStart(panels, { touches: [{ clientX: 180, clientY: 100 }] });
+    fireEvent.touchEnd(panels, { changedTouches: [{ clientX: 145, clientY: 104 }] });
+    fireEvent.touchStart(panels, { touches: [{ clientX: 180, clientY: 100 }] });
+    fireEvent.touchEnd(panels, { changedTouches: [{ clientX: 110, clientY: 190 }] });
+    expect(screen.getByRole('tab', { name: 'Ingredients' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('resets mobile recipe panels to ingredients when another recipe opens', async () => {
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Directions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
+    await userEvent.click(within(screen.getByRole('list', { name: 'Recipes' })).getByRole('button', { name: /Open Birthday Cake/i }));
+
+    expect(screen.getByRole('tab', { name: 'Ingredients' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('keeps unavailable cloud actions disabled in local mode', async () => {
     render(<App />);
 
