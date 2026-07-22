@@ -19,7 +19,10 @@ export default {
       let body: unknown;
       try { body = await request.json(); }
       catch { throw new ImportError('INVALID_URL', 'Send a JSON body containing a recipe URL.'); }
-      const transport = createPinnedTransport(Deno.connect, Deno.startTls);
+      const transport = createPinnedTransport(
+        Deno.connect,
+        (connection, options) => Deno.startTls(connection as Deno.TcpConn, options),
+      );
       const recipe = await importRecipe(body, { resolveHost, transport });
       return Response.json({ recipe });
     } catch (error) {
