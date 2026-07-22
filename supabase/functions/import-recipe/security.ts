@@ -85,7 +85,18 @@ export async function fetchRecipePage(value: string, options: FetchOptions): Pro
     let target = await assertSafeUrl(value, options.resolveHost, controller.signal);
     for (let redirects = 0; ; redirects++) {
       let response: Response;
-      try { response = await options.transport({ url: target.url, approvedAddresses: target.approvedAddresses, signal: controller.signal, headers: { accept: 'text/html,application/xhtml+xml' }, maxBytes }); }
+      try {
+        response = await options.transport({
+          url: target.url,
+          approvedAddresses: target.approvedAddresses,
+          signal: controller.signal,
+          headers: {
+            accept: 'text/html,application/xhtml+xml',
+            'user-agent': 'Mozilla/5.0 (compatible; RecipeBox/1.0; +https://recipe-box-puce-nu.vercel.app)',
+          },
+          maxBytes,
+        });
+      }
       catch { throw new ImportError('FETCH_FAILED', 'The recipe site could not be reached.', 502); }
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         if (redirects >= maxRedirects) throw new ImportError('FETCH_FAILED', 'The recipe page redirected too many times.', 502);

@@ -32,6 +32,10 @@ describe('recipe URL security', () => {
       url: new URL('https://recipes.example/a'),
       approvedAddresses: ['93.184.216.34', '2606:2800:220:1:248:1893:25c8:1946'],
       maxBytes: 1_500_000,
+      headers: expect.objectContaining({
+        accept: 'text/html,application/xhtml+xml',
+        'user-agent': expect.stringContaining('Mozilla/5.0'),
+      }),
     }));
   });
 

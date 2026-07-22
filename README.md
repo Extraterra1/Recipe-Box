@@ -71,7 +71,7 @@ To deploy the importer to the linked Supabase project:
 npx supabase functions deploy import-recipe
 ```
 
-Keep Supabase platform JWT verification enabled, which is the default. The client invokes the function with the signed-in user's token, and `withSupabase({ auth: 'user' })` provides application-level user authentication inside the handler. The function's CORS wrapper handles browser `OPTIONS` preflight requests according to Supabase's Edge Function guidance.
+The importer accepts the app's Supabase publishable key, so recipe import works without requiring a signed-in user. Keep platform JWT verification disabled for this function and use `withSupabase({ auth: 'publishable' })` to validate the `apikey` header. The function's CORS wrapper handles browser `OPTIONS` preflight requests according to Supabase's Edge Function guidance.
 
 ## Quality Checks
 

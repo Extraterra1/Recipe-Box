@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 import { withCors } from './cors';
 
 describe('withCors', () => {
-  it('keeps the platform JWT check enabled for authenticated calls', () => {
+  it('accepts the app publishable key without requiring a signed-in user', () => {
     const config = readFileSync('supabase/config.toml', 'utf8');
+    const entrypoint = readFileSync('supabase/functions/import-recipe/index.ts', 'utf8');
     expect(config).toContain('[functions.import-recipe]');
-    expect(config).toContain('verify_jwt = true');
+    expect(config).toContain('verify_jwt = false');
+    expect(entrypoint).toContain("withSupabase({ auth: 'publishable' }");
   });
   it('answers unauthenticated preflight without invoking the protected handler', async () => {
     let called = false;

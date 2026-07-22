@@ -13,7 +13,7 @@ async function resolveHost(hostname: string, signal?: AbortSignal): Promise<stri
 }
 
 export default {
-  fetch: withCors(withSupabase({ auth: 'user' }, async (request) => {
+  fetch: withCors(withSupabase({ auth: 'publishable' }, async (request) => {
     if (request.method !== 'POST') return Response.json({ error: { code: 'INVALID_URL', message: 'Use POST to import a recipe.' } }, { status: 405 });
     try {
       let body: unknown;
