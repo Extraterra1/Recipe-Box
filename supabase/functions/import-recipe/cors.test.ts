@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import { withCors } from './cors';
 
 describe('withCors', () => {
-  it('lets preflight reach the function while application auth protects POST', () => {
+  it('keeps the platform JWT check enabled for authenticated calls', () => {
     const config = readFileSync('supabase/config.toml', 'utf8');
     expect(config).toContain('[functions.import-recipe]');
-    expect(config).toContain('verify_jwt = false');
+    expect(config).toContain('verify_jwt = true');
   });
   it('answers unauthenticated preflight without invoking the protected handler', async () => {
     let called = false;
