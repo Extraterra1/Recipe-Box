@@ -184,6 +184,24 @@ describe('Recipe Box app shell', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Settled Import' })).toBeInTheDocument();
   });
 
+  it('keeps Tab and Shift+Tab on the dialog when a pending import disables every control', async () => {
+    recipeImportMocks.importRecipe.mockReturnValue(new Promise(() => {}));
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Recipe URL' }), 'https://example.com/pending');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Import from URL' });
+    expect(dialog).toHaveFocus();
+    await userEvent.tab();
+    expect(dialog).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(dialog).toHaveFocus();
+  });
+
   it('retains the URL and shows the import error when an import fails', async () => {
     recipeImportMocks.importRecipe.mockRejectedValue(new Error('The recipe page could not be reached. Try again.'));
     render(<App />);

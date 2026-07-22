@@ -719,6 +719,10 @@ function AddRecipeDialog({
     target?.focus();
   }, [surface]);
 
+  useLayoutEffect(() => {
+    if (isImporting) dialogRef.current?.focus();
+  }, [isImporting]);
+
   function handleDialogKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -730,7 +734,11 @@ function AddRecipeDialog({
     const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
       'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]'
     ) ?? []);
-    if (!focusable.length) return;
+    if (!focusable.length) {
+      event.preventDefault();
+      dialogRef.current?.focus();
+      return;
+    }
     const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
     const nextIndex = event.shiftKey
       ? (currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1)
@@ -752,6 +760,7 @@ function AddRecipeDialog({
         aria-modal="true"
         aria-labelledby="add-dialog-title"
         aria-busy={isImporting}
+        tabIndex={-1}
         onKeyDown={handleDialogKeyDown}
       >
         {surface === 'choices' ? (
