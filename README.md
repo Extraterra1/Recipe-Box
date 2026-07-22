@@ -71,7 +71,7 @@ To deploy the importer to the linked Supabase project:
 npx supabase functions deploy import-recipe
 ```
 
-The function configuration in `supabase/config.toml` intentionally sets `verify_jwt = false`. This lets unauthenticated browser `OPTIONS` preflight requests reach the function. The POST handler still enforces application-level Supabase user authentication through `withSupabase({ auth: 'user' })`. Do not remove either layer when changing the import endpoint.
+Keep Supabase platform JWT verification enabled, which is the default. The client invokes the function with the signed-in user's token, and `withSupabase({ auth: 'user' })` provides application-level user authentication inside the handler. The function's CORS wrapper handles browser `OPTIONS` preflight requests according to Supabase's Edge Function guidance.
 
 ## Quality Checks
 
