@@ -84,8 +84,11 @@ describe('seedRecipesIfNeeded', () => {
       createdAt: '2026-05-14T00:00:00.000Z',
       updatedAt: '2026-05-14T00:00:00.000Z'
     };
+    const limit = vi.fn().mockResolvedValue({ data: [], error: null });
+    const eq = vi.fn().mockReturnValue({ limit });
+    const select = vi.fn().mockReturnValue({ eq });
     const upsert = vi.fn().mockResolvedValue({ error: null });
-    const from = vi.fn().mockReturnValue({ upsert });
+    const from = vi.fn().mockReturnValue({ select, upsert });
 
     vi.mocked(getCachedRecipes).mockResolvedValue([recipe]);
     vi.mocked(getSupabaseClient).mockResolvedValue({ from } as never);
@@ -94,6 +97,26 @@ describe('seedRecipesIfNeeded', () => {
 
     expect(from).toHaveBeenCalledWith('recipes');
     expect(upsert).toHaveBeenCalledOnce();
+  });
+
+  it('does not recreate cached recipes when the remote cookbook already has recipes', async () => {
+    const cachedRecipe = {
+      id: 'stale-local-copy',
+      cookbookId: 'cookbook-1',
+      title: 'Deleted recipe'
+    } as Recipe;
+    const limit = vi.fn().mockResolvedValue({ data: [{ id: 'remote-recipe' }], error: null });
+    const eq = vi.fn().mockReturnValue({ limit });
+    const select = vi.fn().mockReturnValue({ eq });
+    const upsert = vi.fn();
+    const from = vi.fn().mockReturnValue({ select, upsert });
+
+    vi.mocked(getCachedRecipes).mockResolvedValue([cachedRecipe]);
+    vi.mocked(getSupabaseClient).mockResolvedValue({ from } as never);
+
+    await seedRecipesIfNeeded('cookbook-1', [cachedRecipe]);
+
+    expect(upsert).not.toHaveBeenCalled();
   });
 });
 

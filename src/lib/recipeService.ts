@@ -108,10 +108,21 @@ export async function seedRecipesIfNeeded(cookbookId: string, recipes: Recipe[])
 
   const supabase = await getSupabaseClient();
   if (supabase && hasSupabaseConfig && navigator.onLine) {
-    const inserts = seeded.map((recipe) => toRecipeInsert(recipe, cookbookId));
-    const { error } = await supabase.from('recipes').upsert(inserts, { onConflict: 'cookbook_id,title' });
-    if (error) {
-      throw error;
+    const recipes = supabase.from('recipes');
+    const { data: remoteRecipes, error: lookupError } = await recipes
+      .select('id')
+      .eq('cookbook_id', cookbookId)
+      .limit(1);
+    if (lookupError) {
+      throw lookupError;
+    }
+
+    if (!remoteRecipes?.length) {
+      const inserts = seeded.map((recipe) => toRecipeInsert(recipe, cookbookId));
+      const { error } = await recipes.upsert(inserts, { onConflict: 'cookbook_id,title' });
+      if (error) {
+        throw error;
+      }
     }
   }
 
