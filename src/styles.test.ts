@@ -22,4 +22,13 @@ describe('mobile recipe panels', () => {
       /@media \(max-width: 759px\)\s*\{[\s\S]*?\.recipe-panel-toggle\s*\{[^}]*display:\s*grid;[\s\S]*?\.recipe-reading-panel\[data-active="false"\]\s*\{[^}]*display:\s*none;/,
     );
   });
+
+  it('slides one active indicator left and right between the pill options', () => {
+    expect(styles).toMatch(
+      /\.recipe-panel-toggle::before\s*\{[^}]*transition:\s*transform 320ms/s,
+    );
+    expect(styles).toMatch(/\.recipe-panel-toggle\[data-active="directions"\]::before\s*\{[^}]*transform:\s*translateX\(calc\(100% \+ 3px\)\)/s);
+    expect(styles).toMatch(/\.recipe-panel-toggle button\[aria-selected="true"\]\s*\{[^}]*background:\s*transparent;/s);
+    expect(styles).not.toMatch(/\.recipe-reading-panel[^}]*animation:/s);
+  });
 });

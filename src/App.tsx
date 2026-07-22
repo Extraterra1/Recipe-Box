@@ -1089,6 +1089,14 @@ function RecipeDetail({
     swipeStart.current = null;
   }, [recipe.id]);
 
+  function switchRecipePanel(panel: 'ingredients' | 'directions') {
+    if (panel === activeRecipePanel) {
+      return;
+    }
+
+    setActiveRecipePanel(panel);
+  }
+
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
     const touch = event.touches[0];
     swipeStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
@@ -1109,7 +1117,7 @@ function RecipeDetail({
       return;
     }
 
-    setActiveRecipePanel(horizontalTravel < 0 ? 'directions' : 'ingredients');
+    switchRecipePanel(horizontalTravel < 0 ? 'directions' : 'ingredients');
   }
 
   return (
@@ -1159,14 +1167,19 @@ function RecipeDetail({
         </a>
       ) : recipe.sourceLabel ? <p className="source-context">Source: {recipe.sourceLabel}</p> : null}
 
-      <div className="recipe-panel-toggle" role="tablist" aria-label="Recipe content">
+      <div
+        className="recipe-panel-toggle"
+        role="tablist"
+        aria-label="Recipe content"
+        data-active={activeRecipePanel}
+      >
         <button
           type="button"
           id="ingredients-tab"
           role="tab"
           aria-selected={activeRecipePanel === 'ingredients'}
           aria-controls="ingredients-panel"
-          onClick={() => setActiveRecipePanel('ingredients')}
+          onClick={() => switchRecipePanel('ingredients')}
         >
           Ingredients
         </button>
@@ -1176,7 +1189,7 @@ function RecipeDetail({
           role="tab"
           aria-selected={activeRecipePanel === 'directions'}
           aria-controls="directions-panel"
-          onClick={() => setActiveRecipePanel('directions')}
+          onClick={() => switchRecipePanel('directions')}
         >
           Directions
         </button>

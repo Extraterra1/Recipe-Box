@@ -967,11 +967,13 @@ describe('Recipe Box app shell', () => {
 
     const ingredientsTab = screen.getByRole('tab', { name: 'Ingredients' });
     const directionsTab = screen.getByRole('tab', { name: 'Directions' });
+    expect(screen.getByRole('tablist', { name: 'Recipe content' })).toHaveAttribute('data-active', 'ingredients');
     expect(ingredientsTab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel', { name: 'Ingredients' })).toHaveAttribute('data-active', 'true');
 
     await userEvent.click(directionsTab);
 
+    expect(screen.getByRole('tablist', { name: 'Recipe content' })).toHaveAttribute('data-active', 'directions');
     expect(directionsTab).toHaveAttribute('aria-selected', 'true');
     expect(ingredientsTab).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tabpanel', { name: 'Directions' })).toHaveAttribute('data-active', 'true');

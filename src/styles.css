@@ -459,6 +459,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
   .recipe-rail[data-mobile-state="inactive"] { display: none; }
   .desktop-preview-pane[data-mobile-state="inactive"] { display: none; }
   .recipe-panel-toggle {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 3px;
@@ -467,8 +468,24 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     border: 1px solid var(--separator);
     border-radius: 999px;
     background: var(--search-surface);
+    overflow: hidden;
   }
+  .recipe-panel-toggle::before {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 9px) / 2);
+    border-radius: 999px;
+    background: var(--accent);
+    content: "";
+    transform: translateX(0);
+    transition: transform 320ms cubic-bezier(.22, 1.35, .36, 1);
+  }
+  .recipe-panel-toggle[data-active="directions"]::before { transform: translateX(calc(100% + 3px)); }
   .recipe-panel-toggle button {
+    position: relative;
+    z-index: 1;
     min-height: 44px;
     padding: 0 12px;
     border-radius: 999px;
@@ -477,9 +494,9 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
     cursor: pointer;
     font-size: 15px;
     font-weight: 600;
-    transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 180ms var(--ease-out);
+    transition: color 180ms var(--ease-out), transform 180ms var(--ease-out);
   }
-  .recipe-panel-toggle button[aria-selected="true"] { background: var(--accent); color: var(--canvas); }
+  .recipe-panel-toggle button[aria-selected="true"] { background: transparent; color: var(--canvas); }
   .recipe-panel-toggle button:active { transform: scale(.985); }
   .recipe-reading-panel[data-active="false"] { display: none; }
   .detail-actions, .form-actions, .button-row { align-items: stretch; }
