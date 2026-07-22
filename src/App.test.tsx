@@ -105,6 +105,30 @@ describe('Recipe Box app shell', () => {
     expect(screen.getByRole('textbox', { name: 'Ingredients' })).toHaveValue('2 cups flour');
   });
 
+  it('keeps the URL import surface locked while an import is pending', async () => {
+    let resolveImport!: (value: import('./lib/types').RecipeDraft) => void;
+    recipeImportMocks.importRecipe.mockReturnValue(new Promise((resolve) => { resolveImport = resolve; }));
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Recipe URL' }), 'https://example.com/pending');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    const back = screen.getByRole('button', { name: 'Back to add options' });
+    expect(back).toBeDisabled();
+    await userEvent.click(back);
+    expect(screen.getByRole('dialog', { name: 'Import from URL' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create manually' })).not.toBeInTheDocument();
+
+    resolveImport({
+      title: 'Pending Import', imageUrl: '', sourceLabel: '', sourceUrl: 'https://example.com/pending',
+      metadata: '', ingredients: [], directions: [], notes: [], nutrition: [], tags: [], favorite: false
+    });
+    expect(await screen.findByRole('heading', { name: 'Edit Pending Import' })).toBeInTheDocument();
+  });
+
   it('retains the URL and shows the import error when an import fails', async () => {
     recipeImportMocks.importRecipe.mockRejectedValue(new Error('The recipe page could not be reached. Try again.'));
     render(<App />);

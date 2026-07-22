@@ -375,6 +375,12 @@ export default function App() {
     setAddSurface('closed');
   }
 
+  function backToAddChoices() {
+    if (isImportingRecipe) return;
+    setRecipeUrlError('');
+    setAddSurface('choices');
+  }
+
   async function submitRecipeUrl(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
@@ -651,10 +657,7 @@ export default function App() {
             startNewRecipe();
           }}
           onShowUrl={() => setAddSurface('url')}
-          onBack={() => {
-            setRecipeUrlError('');
-            setAddSurface('choices');
-          }}
+          onBack={backToAddChoices}
           onCancel={closeAddMenu}
           onSubmit={submitRecipeUrl}
         />
@@ -727,7 +730,7 @@ function AddRecipeDialog({
         ) : (
           <>
             <div className="add-dialog-heading">
-              <button type="button" className="icon-button add-dialog-back" onClick={onBack} aria-label="Back to add options"><ChevronLeft size={20} /></button>
+              <button type="button" className="icon-button add-dialog-back" onClick={onBack} aria-label="Back to add options" disabled={isImporting}><ChevronLeft size={20} /></button>
               <h2 id="add-dialog-title">Import from URL</h2>
               <button type="button" className="icon-button" onClick={onCancel} aria-label="Close URL import" disabled={isImporting}><X size={18} /></button>
             </div>
