@@ -760,11 +760,11 @@ describe('Recipe Box app shell', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /Recipe Box/i })).toBeInTheDocument();
-    await screen.findByRole('list', { name: /Recipes/i });
+    await screen.findByRole('list', { name: 'Recipes' });
 
     await userEvent.type(screen.getByLabelText(/Search recipes/i), 'pizza');
 
-    const list = screen.getByRole('list', { name: /Recipes/i });
+    const list = screen.getByRole('list', { name: 'Recipes' });
     expect(within(list).getByText(/NYC Pizza/i)).toBeInTheDocument();
     expect(within(list).queryByText(/Breakfast Fruit Smoothie/i)).not.toBeInTheDocument();
 
