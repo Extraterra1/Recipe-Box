@@ -1,10 +1,29 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App, { RecipeList, RecipeThumbnail, sortRecipes } from './App';
 import { seedRecipes } from './data/seedRecipes';
 import type { Recipe } from './lib/types';
+
+const recipeImportMocks = vi.hoisted(() => ({
+  getAvailability: vi.fn<() => import('./lib/recipeImport').RecipeImportAvailability>(() => ({ available: true })),
+  importRecipe: vi.fn()
+}));
+
+vi.mock('./lib/recipeImport', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./lib/recipeImport')>();
+  return {
+    ...actual,
+    getRecipeImportAvailability: recipeImportMocks.getAvailability,
+    importRecipeFromUrl: recipeImportMocks.importRecipe
+  };
+});
+
+async function openManualEditor(trigger: HTMLElement) {
+  await userEvent.click(trigger);
+  await userEvent.click(screen.getByRole('button', { name: 'Create manually' }));
+}
 
 const imageRecipe: Recipe = {
   id: 'photo-recipe',
@@ -24,6 +43,114 @@ const imageRecipe: Recipe = {
 };
 
 describe('Recipe Box app shell', () => {
+  beforeEach(() => {
+    recipeImportMocks.getAvailability.mockReturnValue({ available: true });
+    recipeImportMocks.importRecipe.mockReset();
+  });
+
+  it('offers manual creation and URL import from the shared add menu', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+
+    const menu = screen.getByRole('dialog', { name: 'Add recipe' });
+    expect(within(menu).getByRole('button', { name: 'Create manually' })).toBeInTheDocument();
+    expect(within(menu).getByRole('button', { name: 'Import from URL' })).toBeInTheDocument();
+
+    await userEvent.click(within(menu).getByRole('button', { name: 'Create manually' }));
+    expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
+  });
+
+  it('opens a paste-friendly URL import form and validates before importing', async () => {
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+
+    const input = screen.getByRole('textbox', { name: 'Recipe URL' });
+    expect(input).toHaveAttribute('inputmode', 'url');
+    expect(input).toHaveAttribute('autocomplete', 'url');
+    await userEvent.type(input, 'not a URL');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    expect(await screen.findByText('Enter a valid recipe link.')).toBeInTheDocument();
+    expect(recipeImportMocks.importRecipe).not.toHaveBeenCalled();
+    expect(input).toHaveValue('not a URL');
+  });
+
+  it('shows progress then opens an unsaved imported recipe in the editor', async () => {
+    let resolveImport!: (value: import('./lib/types').RecipeDraft) => void;
+    recipeImportMocks.importRecipe.mockReturnValue(new Promise((resolve) => { resolveImport = resolve; }));
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    const input = screen.getByRole('textbox', { name: 'Recipe URL' });
+    await userEvent.type(input, 'https://example.com/garlic-rolls');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    expect(screen.getByRole('button', { name: 'Importing recipe' })).toBeDisabled();
+    expect(input).toBeDisabled();
+    resolveImport({
+      title: 'Cheesy Garlic Rolls', imageUrl: '', sourceLabel: 'Sage Bakes',
+      sourceUrl: 'https://example.com/garlic-rolls', metadata: '12 rolls',
+      ingredients: ['2 cups flour'], directions: ['Mix the dough.'], notes: [], nutrition: [], tags: [], favorite: false
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Edit Cheesy Garlic Rolls' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveValue('Cheesy Garlic Rolls');
+    expect(screen.getByRole('textbox', { name: 'Ingredients' })).toHaveValue('2 cups flour');
+  });
+
+  it('retains the URL and shows the import error when an import fails', async () => {
+    recipeImportMocks.importRecipe.mockRejectedValue(new Error('The recipe page could not be reached. Try again.'));
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    const input = screen.getByRole('textbox', { name: 'Recipe URL' });
+    await userEvent.type(input, 'https://example.com/broken');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+
+    expect(await screen.findByText('The recipe page could not be reached. Try again.')).toBeInTheDocument();
+    expect(input).toHaveValue('https://example.com/broken');
+    expect(input).not.toBeDisabled();
+  });
+
+  it('cancels an imported draft without adding it to the collection', async () => {
+    recipeImportMocks.importRecipe.mockResolvedValue({
+      title: 'Unsaved Import', imageUrl: '', sourceLabel: '', sourceUrl: 'https://example.com/import',
+      metadata: '', ingredients: [], directions: [], notes: [], nutrition: [], tags: [], favorite: false
+    });
+    render(<App />);
+
+    const list = await screen.findByRole('list', { name: 'Recipes' });
+    const initialCount = within(list).getAllByRole('button').length;
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Import from URL' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Recipe URL' }), 'https://example.com/import');
+    await userEvent.click(screen.getByRole('button', { name: 'Import recipe' }));
+    await screen.findByRole('heading', { name: 'Edit Unsaved Import' });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByText('Unsaved Import')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Recipes' })).getAllByRole('button')).toHaveLength(initialCount);
+  });
+
+  it('explains when URL import is unavailable', async () => {
+    recipeImportMocks.getAvailability.mockReturnValue({ available: false, reason: 'Connect to the internet to import a recipe.' });
+    render(<App />);
+
+    await screen.findByRole('list', { name: 'Recipes' });
+    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    const importButton = screen.getByRole('button', { name: 'Import from URL' });
+    expect(importButton).toBeDisabled();
+    expect(screen.getByText('Connect to the internet to import a recipe.')).toBeInTheDocument();
+  });
   it('shows stable navigation counts and preview skeletons during bootstrap', () => {
     render(<App />);
 
@@ -200,7 +327,7 @@ describe('Recipe Box app shell', () => {
     render(<App />);
 
     await screen.findByRole('list', { name: 'Recipes' });
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'Title' }), 'Hidden draft');
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
     await userEvent.keyboard('{Escape}');
@@ -326,7 +453,7 @@ describe('Recipe Box app shell', () => {
       expect(scrollIntoView.mock.instances[scrollIntoView.mock.instances.length - 1]).toBe(settings);
     });
 
-    await userEvent.click(within(navigation).getByRole('button', { name: 'Create Recipe' }));
+    await openManualEditor(within(navigation).getByRole('button', { name: 'Create Recipe' }));
     expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
   });
 
@@ -425,7 +552,7 @@ describe('Recipe Box app shell', () => {
 
     const list = await screen.findByRole('list', { name: 'Recipes' });
     list.scrollTop = 360;
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('link', { name: 'Recipe Box home' }));
@@ -454,13 +581,13 @@ describe('Recipe Box app shell', () => {
       render(<App />);
 
       await screen.findByRole('list', { name: 'Recipes' });
-      await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+      await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
       expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       const returnedList = screen.getByRole('list', { name: 'Recipes' });
       await userEvent.click(within(returnedList).getByRole('button', { name: /Open Baguette/i }));
-      await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+      await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
       expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
     } finally {
       vi.unstubAllGlobals();
@@ -592,7 +719,7 @@ describe('Recipe Box app shell', () => {
     render(<App />);
 
     await screen.findByRole('list', { name: 'Recipes' });
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     const title = screen.getByRole('textbox', { name: 'Title' });
     await userEvent.type(title, 'Summer pasta');
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
@@ -670,7 +797,7 @@ describe('Recipe Box app shell', () => {
     expect(list).toHaveProperty('scrollTop', 310);
 
     list.scrollTop = 260;
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('list', { name: 'Recipes' })).toHaveProperty('scrollTop', 260);
   });
@@ -682,7 +809,7 @@ describe('Recipe Box app shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open household settings' }));
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     expect(screen.getByRole('heading', { name: 'Create recipe' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
@@ -706,7 +833,7 @@ describe('Recipe Box app shell', () => {
 
     const list = await screen.findByRole('list', { name: 'Recipes' });
     await userEvent.click(within(list).getByRole('button', { name: /Open Baguette/i }));
-    await userEvent.click(screen.getByRole('button', { name: 'Add recipe' }));
+    await openManualEditor(screen.getByRole('button', { name: 'Add recipe' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(screen.getByRole('heading', { name: 'Baguette' })).toBeInTheDocument();

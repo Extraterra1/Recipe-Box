@@ -25,6 +25,11 @@ import { downloadRecipes } from './lib/export';
 import { exportRecipesAsMarkdown, parseRecipeMarkdown, slugify } from './lib/markdown';
 import { filterRecipes, getAllTags } from './lib/recipeSearch';
 import {
+  getRecipeImportAvailability,
+  importRecipeFromUrl,
+  normalizeRecipeUrl
+} from './lib/recipeImport';
+import {
   ensureCookbook,
   getSession,
   joinCookbookByInvite,
@@ -59,6 +64,7 @@ const BLANK_RECIPE: Recipe = {
 
 type IngredientChecks = Record<string, number[]>;
 type AppView = 'collection' | 'detail' | 'editor' | 'settings';
+type AddSurface = 'closed' | 'choices' | 'url';
 export type RecipeSort = 'alphabetical' | 'recent';
 
 export function sortRecipes(recipes: Recipe[], sort: RecipeSort) {
@@ -99,6 +105,10 @@ export default function App() {
   const [settingsReturnView, setSettingsReturnView] = useState<Exclude<AppView, 'settings'>>('collection');
   const [settingsTarget, setSettingsTarget] = useState<'overview' | 'data'>('overview');
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [addSurface, setAddSurface] = useState<AddSurface>('closed');
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [recipeUrlError, setRecipeUrlError] = useState('');
+  const [isImportingRecipe, setIsImportingRecipe] = useState(false);
   const [authEmail, setAuthEmail] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [lastDeleted, setLastDeleted] = useState<Recipe | null>(null);
@@ -354,6 +364,49 @@ export default function App() {
     setView('editor');
   }
 
+  function openAddMenu() {
+    setRecipeUrlError('');
+    setAddSurface('choices');
+  }
+
+  function closeAddMenu() {
+    if (isImportingRecipe) return;
+    setRecipeUrlError('');
+    setAddSurface('closed');
+  }
+
+  async function submitRecipeUrl(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      normalizeRecipeUrl(recipeUrl);
+    } catch (error) {
+      setRecipeUrlError(error instanceof Error ? error.message : 'Enter a valid recipe link.');
+      return;
+    }
+
+    setRecipeUrlError('');
+    setIsImportingRecipe(true);
+    try {
+      const draft = await importRecipeFromUrl(recipeUrl);
+      const now = new Date().toISOString();
+      rememberCollectionScroll();
+      setEditingRecipe({
+        ...draft,
+        id: createLocalRecipeId(),
+        createdAt: now,
+        updatedAt: now
+      });
+      setEditorReturnView(view === 'detail' ? 'detail' : 'collection');
+      setAddSurface('closed');
+      setRecipeUrl('');
+      setView('editor');
+    } catch (error) {
+      setRecipeUrlError(error instanceof Error ? error.message : 'The recipe page could not be reached. Try again.');
+    } finally {
+      setIsImportingRecipe(false);
+    }
+  }
+
   function openSettings(target: 'overview' | 'data' = 'overview') {
     rememberCollectionScroll();
     if (view !== 'settings') {
@@ -393,7 +446,7 @@ export default function App() {
       ) : null}
       <header className="topbar">
         <div className="topbar-actions topbar-actions-leading">
-          <button type="button" className="icon-button" onClick={startNewRecipe} aria-label="Add recipe">
+          <button type="button" className="icon-button" onClick={openAddMenu} aria-label="Add recipe">
             <Plus size={20} />
           </button>
         </div>
@@ -442,7 +495,7 @@ export default function App() {
             toggleTag(tag);
             setView('collection');
           }}
-          onCreate={startNewRecipe}
+          onCreate={openAddMenu}
           onImportExport={() => openSettings('data')}
           onSettings={() => openSettings()}
         />
@@ -582,6 +635,31 @@ export default function App() {
         </section>
       </main>
 
+      {addSurface !== 'closed' ? (
+        <AddRecipeDialog
+          surface={addSurface}
+          availability={getRecipeImportAvailability()}
+          recipeUrl={recipeUrl}
+          error={recipeUrlError}
+          isImporting={isImportingRecipe}
+          onRecipeUrlChange={(value) => {
+            setRecipeUrl(value);
+            setRecipeUrlError('');
+          }}
+          onManualCreate={() => {
+            setAddSurface('closed');
+            startNewRecipe();
+          }}
+          onShowUrl={() => setAddSurface('url')}
+          onBack={() => {
+            setRecipeUrlError('');
+            setAddSurface('choices');
+          }}
+          onCancel={closeAddMenu}
+          onSubmit={submitRecipeUrl}
+        />
+      ) : null}
+
       {lastDeleted ? (
         <div className="toast" role="status">
           <span>{lastDeleted.title} deleted.</span>
@@ -593,6 +671,94 @@ export default function App() {
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AddRecipeDialog({
+  surface,
+  availability,
+  recipeUrl,
+  error,
+  isImporting,
+  onRecipeUrlChange,
+  onManualCreate,
+  onShowUrl,
+  onBack,
+  onCancel,
+  onSubmit
+}: {
+  surface: Exclude<AddSurface, 'closed'>;
+  availability: ReturnType<typeof getRecipeImportAvailability>;
+  recipeUrl: string;
+  error: string;
+  isImporting: boolean;
+  onRecipeUrlChange: (value: string) => void;
+  onManualCreate: () => void;
+  onShowUrl: () => void;
+  onBack: () => void;
+  onCancel: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <div className="add-dialog-layer" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onCancel();
+    }}>
+      <section className="add-dialog" role="dialog" aria-modal="true" aria-labelledby="add-dialog-title">
+        {surface === 'choices' ? (
+          <>
+            <div className="add-dialog-heading">
+              <h2 id="add-dialog-title">Add recipe</h2>
+              <button type="button" className="icon-button desktop-dialog-close" onClick={onCancel} aria-label="Close add recipe menu"><X size={18} /></button>
+            </div>
+            <div className="add-choice-list">
+              <button type="button" className="add-choice" onClick={onManualCreate} aria-label="Create manually">
+                <Plus size={19} aria-hidden="true" />
+                <span><strong>Create manually</strong><small>Start with an empty recipe</small></span>
+              </button>
+              <button type="button" className="add-choice" onClick={onShowUrl} disabled={!availability.available} aria-label="Import from URL">
+                <Upload size={19} aria-hidden="true" />
+                <span><strong>Import from URL</strong><small>Fill a recipe from a public link</small></span>
+              </button>
+            </div>
+            {!availability.available ? <p className="add-dialog-note">{availability.reason}</p> : null}
+            <button type="button" className="button add-dialog-cancel" onClick={onCancel}>Cancel</button>
+          </>
+        ) : (
+          <>
+            <div className="add-dialog-heading">
+              <button type="button" className="icon-button add-dialog-back" onClick={onBack} aria-label="Back to add options"><ChevronLeft size={20} /></button>
+              <h2 id="add-dialog-title">Import from URL</h2>
+              <button type="button" className="icon-button" onClick={onCancel} aria-label="Close URL import" disabled={isImporting}><X size={18} /></button>
+            </div>
+            <form className="url-import-form" onSubmit={onSubmit} noValidate>
+              <label htmlFor="recipe-import-url">Recipe URL</label>
+              <input
+                id="recipe-import-url"
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="https://example.com/recipe"
+                value={recipeUrl}
+                disabled={isImporting}
+                aria-describedby={error ? 'recipe-import-error' : undefined}
+                aria-invalid={Boolean(error)}
+                onChange={(event) => onRecipeUrlChange(event.target.value)}
+                autoFocus
+              />
+              {error ? <p id="recipe-import-error" className="url-import-error" role="alert">{error}</p> : null}
+              <div className="form-actions">
+                <button type="button" className="button" onClick={onCancel} disabled={isImporting}>Cancel</button>
+                <button type="submit" className="button primary" disabled={isImporting || !recipeUrl.trim()} aria-label={isImporting ? 'Importing recipe' : 'Import recipe'}>
+                  {isImporting ? 'Importing...' : 'Import recipe'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </section>
     </div>
   );
 }
