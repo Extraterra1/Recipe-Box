@@ -625,6 +625,7 @@ describe('Recipe Box app shell', () => {
 
     const rows = within(list).getAllByRole('button');
     expect(rows[0]).toHaveAccessibleName(/Open 2 Dollar Burrito but Cheaper/i);
+    expect(rows).not.toContainEqual(expect.objectContaining({ className: expect.stringContaining('selected') }));
 
     const baguette = within(list).getByRole('button', { name: /Open Baguette/i });
     expect(within(baguette).getByText('Baguette')).toBeInTheDocument();
@@ -791,7 +792,9 @@ describe('Recipe Box app shell', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Back to recipes' }));
 
     expect(screen.getByRole('searchbox', { name: 'Search recipes' })).toHaveValue('pizza');
-    expect(screen.getByRole('list', { name: 'Recipes' })).toBeInTheDocument();
+    const returnedList = screen.getByRole('list', { name: 'Recipes' });
+    expect(returnedList).toBeInTheDocument();
+    expect(within(returnedList).getByRole('button', { name: /Open NYC Pizza/i })).not.toHaveClass('selected');
   });
 
   it('returns from settings to recipe detail', async () => {

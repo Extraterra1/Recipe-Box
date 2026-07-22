@@ -554,7 +554,7 @@ export default function App() {
             recipes={filteredRecipes}
             totalRecipeCount={recipes.length}
             isLoading={isBootstrapping}
-            selectedId={selectedRecipe?.id}
+            selectedId={view === 'detail' ? selectedRecipe?.id : undefined}
             onCreate={startNewRecipe}
             onSelect={(recipe) => {
               if (view === 'collection') {
