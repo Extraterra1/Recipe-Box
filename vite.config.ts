@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.svg'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Recipe Box',
         short_name: 'Recipe Box',
@@ -18,9 +18,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-icon.svg',
+            src: 'pwa-icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]

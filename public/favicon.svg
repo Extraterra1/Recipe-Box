@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Recipe Box">
-  <rect width="64" height="64" rx="14" fill="oklch(98% 0.006 55)"/>
-  <rect x="12" y="10" width="40" height="44" rx="9" fill="oklch(48% 0.145 28)"/>
-  <path d="M22 20h22v24H22a4 4 0 0 1-4-4V24a4 4 0 0 1 4-4Z" fill="oklch(94.5% 0.009 50)"/>
-  <path d="M25 27h12M25 32h15M25 37h9" stroke="oklch(48% 0.145 28)" stroke-width="2.5" stroke-linecap="round"/>
-</svg>
