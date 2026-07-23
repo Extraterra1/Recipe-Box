@@ -25,6 +25,22 @@ describe('AuthScreen', () => {
     expect(callbacks.onSignIn).toHaveBeenCalledWith('cook@example.com', 'secret12');
   });
 
+  it('uses the four-color Google mark on the Google sign-in button', () => {
+    render(<AuthScreen configured recovery={false} {...actions()} />);
+
+    const button = screen.getByRole('button', { name: 'Continue with Google' });
+    const icon = button.querySelector('svg[aria-hidden="true"]');
+
+    expect(icon).toBeInTheDocument();
+    expect(icon?.querySelectorAll('path')).toHaveLength(4);
+    expect(Array.from(icon?.querySelectorAll('path') ?? [], (path) => path.getAttribute('fill'))).toEqual([
+      '#4285F4',
+      '#34A853',
+      '#FBBC05',
+      '#EA4335'
+    ]);
+  });
+
   it('creates an account only when both passwords match', async () => {
     const callbacks = actions();
     render(<AuthScreen configured recovery={false} {...callbacks} />);
